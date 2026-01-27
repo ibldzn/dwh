@@ -1,6 +1,50 @@
 package fetcher
 
-import "context"
+import (
+	"context"
+	"fmt"
+
+	"github.com/ibldzn/dwh-v2/internal/fincloud"
+	"github.com/ibldzn/dwh-v2/internal/models"
+)
+
+func (f *Fetcher) FetchSavingsDetail(ctx context.Context, accountNo string) (models.Saving, error) {
+	req, err := f.client.NewRequestWithSessionID(ctx, "GET", "/tabungan/inquiry/rekening/tabungan", nil)
+	if err != nil {
+		return models.Saving{}, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", accountNo)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return models.Saving{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return models.Saving{}, fmt.Errorf("fetch saving detail failed: %s", resp.Status)
+	}
+
+	var data struct {
+		Data struct {
+			Saving models.Saving `json:"result"`
+		} `json:"data"`
+		Status string `json:"status"`
+	}
+
+	if err := fincloud.DecodeJSON(resp, &data); err != nil {
+		return models.Saving{}, err
+	}
+
+	if data.Status != "ok" {
+		return models.Saving{}, fmt.Errorf("fetch saving detail failed: status %s", data.Status)
+	}
+
+	return data.Data.Saving, nil
+}
 
 func (f *Fetcher) FetchSavingsCashDepositTransactionReport(ctx context.Context, branch, startDate, endDate string) (string, error) {
 	return f.client.DownloadReport(

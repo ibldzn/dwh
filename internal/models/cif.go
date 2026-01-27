@@ -1,137 +1,141 @@
 package models
 
 type CIF struct {
-	ID                                      string `json:"id"`
-	NamaNasabah                             string `json:"namanasabah"`
-	JenisNasabah                            string `json:"jenisnasabah"`
-	PeroranganLamaMenempatiTahun            int64  `json:"perorangan_lamamenempatitahun"`
-	PeroranganLamaMenempatiBulan            int64  `json:"perorangan_lamamenempatibulan"`
-	PeroranganAlamatEmail                   string `json:"perorangan_alamatemail"`
-	PerusahaanNonPwp                        string `json:"perusahaan_nonpwp"`
-	PerusahaanJenisBadanUsaha               string `json:"perusahaan_jenisbadanusaha"`
-	PerusahaanNoAktaAwalBerdiri             string `json:"perusahaan_noaktaawalberdiri"`
-	PerusahaanTempatAktaAwal                string `json:"perusahaan_tempataktaawal"`
-	PerusahaanTglAktaAwal                   DateTZ `json:"perusahaan_tglaktaawal"`
-	PerusahaanNoAktaAkhirBerdiri            string `json:"perusahaan_noaktaakhirberdiri"`
-	PerusahaanTempatAktaAkhir               string `json:"perusahaan_tempataktaakhir"`
-	PerusahaanTglAktaAkhir                  DateTZ `json:"perusahaan_tglaktaakhir"`
-	DataPekerjaanLamaBekerjaTahun           int64  `json:"datapekerjaan_lamabekerjatahun"`
-	DataPekerjaanLamaBekerjaBulan           int64  `json:"datapekerjaan_lamabekerjabulan"`
-	DataPekerjaanLamaBekerjaSebelumnyaTahun int64  `json:"datapekerjaan_lamabekerjasebelumnyatahun"`
-	DataPekerjaanLamaBekerjaSebelumnyaBulan int64  `json:"datapekerjaan_lamabekerjasebelumnyabulan"`
-	DataAlamatKtpAlamat1                    string `json:"dataalamat_ktp_alamat1"`
-	DataAlamatKtpKelurahan                  string `json:"dataalamat_ktp_kelurahan"`
-	DataAlamatKtpKecamatan                  string `json:"dataalamat_ktp_kecamatan"`
-	DataAlamatKtpKota                       string `json:"dataalamat_ktp_kota"`
-	DataAlamatKtpKodePos                    string `json:"dataalamat_ktp_kodepos"`
-	DataAlamatKtpPropinsi                   string `json:"dataalamat_ktp_propinsi"`
-	DataAlamatAlamatKantorAdalahAlamatAkta  string `json:"dataalamat_alamatkantoradalahalamatakta"`
-	DataAlamatKantorAlamat1                 string `json:"dataalamat_kantor_alamat1"`
-	DataAlamatKantorKelurahan               string `json:"dataalamat_kantor_kelurahan"`
-	DataAlamatKantorKecamatan               string `json:"dataalamat_kantor_kecamatan"`
-	DataAlamatKantorKota                    string `json:"dataalamat_kantor_kota"`
-	DataAlamatKantorKodePos                 int64  `json:"dataalamat_kantor_kodepos"`
-	DataAlamatKantorPropinsi                string `json:"dataalamat_kantor_propinsi"`
-	DataAlamatKantorNoHp                    string `json:"dataalamat_kantor_nohp"`
-	DataKontakLainnyaKodePos                int64  `json:"datakontaklainnya_kodepos"`
-	DataPenjaminKodePos                     int64  `json:"datapenjamin_kodepos"`
-	DataPenjaminLamaBekerjaTahun            int64  `json:"datapenjamin_lamabekerjatahun"`
-	DataPenjaminLamaBekerjaBulan            int64  `json:"datapenjamin_lamabekerjabulan"`
-	DataUntukSidNamaAlias                   string `json:"datauntuksid_namaalias"`
-	DataKycLimitTransaksiSetoranTunai       int64  `json:"datakyc_limittransaksi_setorantunai"`
-	DataKycLimitTransaksiSetoranNonTunai    int64  `json:"datakyc_limittransaksi_setorannontunai"`
-	DataKycLimitTransaksiPenarikanTunai     int64  `json:"datakyc_limittransaksi_penarikantunai"`
-	DataKycLimitTransaksiPenarikanNonTunai  int64  `json:"datakyc_limittransaksi_penarikannontunai"`
-	DataKycLimitTransaksiFrekuensi          int64  `json:"datakyc_limittransaksi_frekuensi"`
-	DataKycDataNasabahPerusahaanPenghasilan int64  `json:"datakyc_datanasabahperusahaan_penghasilan"`
-	TglBukaCif                              DateTZ `json:"tglbukacif"`
-	KolekBiManual                           int64  `json:"kolekbi_manual"`
-	KolekBprManual                          int64  `json:"kolekbpr_manual"`
-	KolekBiPinjaman                         int64  `json:"kolekbi_pinjaman"`
-	KolekBprPinjaman                        int64  `json:"kolekbpr_pinjaman"`
-	RecKoreksiOleh                          string `json:"rec_koreksi_oleh"`
-	RecKoreksiTglJam                        Rec    `json:"rec_koreksi_tgljam"`
-	RecKoreksiLokasi                        string `json:"rec_koreksi_lokasi"`
-	ProfilRisikoIdentitasNasabah            string `json:"profilresiko_identitasnasabah"`
-	ProfilRisikoLokasiUsaha                 string `json:"profilresiko_lokasiusaha"`
-	ProfilRisikoJumlahTransaksi             string `json:"profilresiko_jumlahtransaksi"`
-	ProfilRisikoKegiatanUsaha               string `json:"profilresiko_kegiatanusaha"`
-	ProfilRisikoStrukturKepemilikan         string `json:"profilresiko_strukturkepemilikan"`
-	ProfilRisikoProdukJasaJaringan          string `json:"profilresiko_produkjasajaringan"`
-	ProfilRisikoInformasiLain               string `json:"profilresiko_informasilain"`
-	ProfilRisikoResumeAkhir                 string `json:"profilresiko_resumeakhir"`
-	ProfilRisikoProfil                      string `json:"profilresiko_profil"`
-	RecDibuatOleh                           string `json:"rec_dibuat_oleh"`
-	RecDibuatTglJam                         Rec    `json:"rec_dibuat_tgljam"`
-	RecDibuatLokasi                         string `json:"rec_dibuat_lokasi"`
-	RecDiupdateOleh                         string `json:"rec_diupdate_oleh"`
-	RecDiupdateTglJam                       Rec    `json:"rec_diupdate_tgljam"`
-	RecDiupdateLokasi                       string `json:"rec_diupdate_lokasi"`
-	RecTimestamp                            Rec    `json:"rec_timestamp"`
-	DataPengurusPerusahaan                  []struct {
-		ID                      string  `json:"id"`
-		NoCif                   string  `json:"nocif"`
-		NoUrut                  int64   `json:"nourut"`
-		Nama                    string  `json:"nama"`
-		NoNpwp                  string  `json:"nonpwp"`
-		TempatLahir             string  `json:"tempatlahir"`
-		TglLahir                DateTZ  `json:"tgllahir"`
-		JenisKelamin            string  `json:"jeniskelamin"`
-		NoKtp                   string  `json:"noktp"`
-		TglDikeluarkan          any     `json:"tgldikeluarkan"`
-		BerlakuSampai           any     `json:"berlakusampai"`
-		BerlakuSeumurHidup      any     `json:"berlakuseumurhidup"`
-		JabatanPengurus         string  `json:"jabatanpengurus"`
-		KepemilikanSaham        int64   `json:"kepemilikansaham"`
-		AlamatPengurusAlamat1   string  `json:"alamatpengurus_alamat1"`
-		AlamatPengurusAlamat2   string  `json:"alamatpengurus_alamat2"`
-		AlamatPengurusRt        string  `json:"alamatpengurus_rt"`
-		AlamatPengurusRw        string  `json:"alamatpengurus_rw"`
-		AlamatPengurusKelurahan string  `json:"alamatpengurus_kelurahan"`
-		AlamatPengurusKecamatan string  `json:"alamatpengurus_kecamatan"`
-		AlamatPengurusKota      string  `json:"alamatpengurus_kota"`
-		AlamatPengurusPropinsi  string  `json:"alamatpengurus_propinsi"`
-		AlamatPengurusKodePos   string  `json:"alamatpengurus_kodepos"`
-		AlamatPengurusKodeArea  string  `json:"alamatpengurus_kodearea"`
-		AlamatPengurusNoTelp    string  `json:"alamatpengurus_notelp"`
-		AlamatPengurusNoHp      string  `json:"alamatpengurus_nohp"`
-		AlamatPengurusNoFax     string  `json:"alamatpengurus_nofax"`
-		TempatDikeluarkan       *string `json:"tempat_dikeluarkan"`
-		RecTimestamp            Rec     `json:"rec_timestamp"`
-	} `json:"datapengurusperusahaan"`
-	CustomField   []any `json:"customfield"`
-	DataDiklat    []any `json:"datadiklat"`
-	DataAhliWaris []struct {
-		ID                    string `json:"id"`
-		NoUrut                string `json:"nourut"`
-		NoCif                 string `json:"nocif"`
-		AhliWarisNama         any    `json:"ahliwaris_nama"`
-		AhliWarisHubDgnKontak any    `json:"ahliwaris_hubdgnkontak"`
-		AhliWarisAlamat1      any    `json:"ahliwaris_alamat1"`
-		AhliWarisAlamat2      any    `json:"ahliwaris_alamat2"`
-		AhliWarisRt           any    `json:"ahliwaris_rt"`
-		AhliWarisRw           any    `json:"ahliwaris_rw"`
-		AhliWarisKelurahan    any    `json:"ahliwaris_kelurahan"`
-		AhliWarisKecamatan    any    `json:"ahliwaris_kecamatan"`
-		AhliWarisKota         any    `json:"ahliwaris_kota"`
-		AhliWarisPropinsi     any    `json:"ahliwaris_propinsi"`
-		AhliWarisNoTelp       any    `json:"ahliwaris_notelp"`
-		AhliWarisNoHp         any    `json:"ahliwaris_nohp"`
-		AhliWarisNoFax        any    `json:"ahliwaris_nofax"`
-		AhliWarisKodePos      string `json:"ahliwaris_kodepos"`
-		RecTimestamp          Rec    `json:"rec_timestamp"`
-	} `json:"dataahliwaris"`
-	StatusDokumen string `json:"status_dokumen"`
-	PlafondLimit  any    `json:"plafondlimit"`
-	Tabungan      []struct {
-		ID              string `json:"id"`
-		Currency        string `json:"currency"`
-		StatusDokumen   string `json:"status_dokumen"`
-		NoAlt           any    `json:"noalt"`
-		TglBukaRekening string `json:"tglbukarekening"`
-		Nama            string `json:"nama"`
-	} `json:"tabungan"`
+	ID                                      string                   `json:"id" db:"id"`
+	NamaNasabah                             string                   `json:"namanasabah" db:"namanasabah"`
+	JenisNasabah                            string                   `json:"jenisnasabah" db:"jenisnasabah"`
+	PeroranganLamaMenempatiTahun            int64                    `json:"perorangan_lamamenempatitahun" db:"perorangan_lamamenempatitahun"`
+	PeroranganLamaMenempatiBulan            int64                    `json:"perorangan_lamamenempatibulan" db:"perorangan_lamamenempatibulan"`
+	PeroranganAlamatEmail                   string                   `json:"perorangan_alamatemail" db:"perorangan_alamatemail"`
+	PerusahaanNoNpwp                        string                   `json:"perusahaan_nonpwp" db:"perusahaan_nonpwp"`
+	PerusahaanJenisBadanUsaha               string                   `json:"perusahaan_jenisbadanusaha" db:"perusahaan_jenisbadanusaha"`
+	PerusahaanNoAktaAwalBerdiri             string                   `json:"perusahaan_noaktaawalberdiri" db:"perusahaan_noaktaawalberdiri"`
+	PerusahaanTempatAktaAwal                string                   `json:"perusahaan_tempataktaawal" db:"perusahaan_tempataktaawal"`
+	PerusahaanTglAktaAwal                   DateTZ                   `json:"perusahaan_tglaktaawal" db:"perusahaan_tglaktaawal"`
+	PerusahaanNoAktaAkhirBerdiri            string                   `json:"perusahaan_noaktaakhirberdiri" db:"perusahaan_noaktaakhirberdiri"`
+	PerusahaanTempatAktaAkhir               string                   `json:"perusahaan_tempataktaakhir" db:"perusahaan_tempataktaakhir"`
+	PerusahaanTglAktaAkhir                  DateTZ                   `json:"perusahaan_tglaktaakhir" db:"perusahaan_tglaktaakhir"`
+	DataPekerjaanLamaBekerjaTahun           int64                    `json:"datapekerjaan_lamabekerjatahun" db:"datapekerjaan_lamabekerjatahun"`
+	DataPekerjaanLamaBekerjaBulan           int64                    `json:"datapekerjaan_lamabekerjabulan" db:"datapekerjaan_lamabekerjabulan"`
+	DataPekerjaanLamaBekerjaSebelumnyaTahun int64                    `json:"datapekerjaan_lamabekerjasebelumnyatahun" db:"datapekerjaan_lamabekerjasebelumnyatahun"`
+	DataPekerjaanLamaBekerjaSebelumnyaBulan int64                    `json:"datapekerjaan_lamabekerjasebelumnyabulan" db:"datapekerjaan_lamabekerjasebelumnyabulan"`
+	DataAlamatKtpAlamat1                    string                   `json:"dataalamat_ktp_alamat1" db:"dataalamat_ktp_alamat1"`
+	DataAlamatKtpKelurahan                  string                   `json:"dataalamat_ktp_kelurahan" db:"dataalamat_ktp_kelurahan"`
+	DataAlamatKtpKecamatan                  string                   `json:"dataalamat_ktp_kecamatan" db:"dataalamat_ktp_kecamatan"`
+	DataAlamatKtpKota                       string                   `json:"dataalamat_ktp_kota" db:"dataalamat_ktp_kota"`
+	DataAlamatKtpKodePos                    string                   `json:"dataalamat_ktp_kodepos" db:"dataalamat_ktp_kodepos"`
+	DataAlamatKtpPropinsi                   string                   `json:"dataalamat_ktp_propinsi" db:"dataalamat_ktp_propinsi"`
+	DataAlamatAlamatKantorAdalahAlamatAkta  string                   `json:"dataalamat_alamatkantoradalahalamatakta" db:"dataalamat_alamatkantoradalahalamatakta"`
+	DataAlamatKantorAlamat1                 string                   `json:"dataalamat_kantor_alamat1" db:"dataalamat_kantor_alamat1"`
+	DataAlamatKantorKelurahan               string                   `json:"dataalamat_kantor_kelurahan" db:"dataalamat_kantor_kelurahan"`
+	DataAlamatKantorKecamatan               string                   `json:"dataalamat_kantor_kecamatan" db:"dataalamat_kantor_kecamatan"`
+	DataAlamatKantorKota                    string                   `json:"dataalamat_kantor_kota" db:"dataalamat_kantor_kota"`
+	DataAlamatKantorKodePos                 int64                    `json:"dataalamat_kantor_kodepos" db:"dataalamat_kantor_kodepos"`
+	DataAlamatKantorPropinsi                string                   `json:"dataalamat_kantor_propinsi" db:"dataalamat_kantor_propinsi"`
+	DataAlamatKantorNoHp                    string                   `json:"dataalamat_kantor_nohp" db:"dataalamat_kantor_nohp"`
+	DataKontakLainnyaKodePos                int64                    `json:"datakontaklainnya_kodepos" db:"datakontaklainnya_kodepos"`
+	DataPenjaminKodePos                     int64                    `json:"datapenjamin_kodepos" db:"datapenjamin_kodepos"`
+	DataPenjaminLamaBekerjaTahun            int64                    `json:"datapenjamin_lamabekerjatahun" db:"datapenjamin_lamabekerjatahun"`
+	DataPenjaminLamaBekerjaBulan            int64                    `json:"datapenjamin_lamabekerjabulan" db:"datapenjamin_lamabekerjabulan"`
+	DataUntukSidNamaAlias                   string                   `json:"datauntuksid_namaalias" db:"datauntuksid_namaalias"`
+	DataKycLimitTransaksiSetoranTunai       int64                    `json:"datakyc_limittransaksi_setorantunai" db:"datakyc_limittransaksi_setorantunai"`
+	DataKycLimitTransaksiSetoranNonTunai    int64                    `json:"datakyc_limittransaksi_setorannontunai" db:"datakyc_limittransaksi_setorannontunai"`
+	DataKycLimitTransaksiPenarikanTunai     int64                    `json:"datakyc_limittransaksi_penarikantunai" db:"datakyc_limittransaksi_penarikantunai"`
+	DataKycLimitTransaksiPenarikanNonTunai  int64                    `json:"datakyc_limittransaksi_penarikannontunai" db:"datakyc_limittransaksi_penarikannontunai"`
+	DataKycLimitTransaksiFrekuensi          int64                    `json:"datakyc_limittransaksi_frekuensi" db:"datakyc_limittransaksi_frekuensi"`
+	DataKycDataNasabahPerusahaanPenghasilan int64                    `json:"datakyc_datanasabahperusahaan_penghasilan" db:"datakyc_datanasabahperusahaan_penghasilan"`
+	TglBukaCif                              DateTZ                   `json:"tglbukacif" db:"tglbukacif"`
+	KolekBiManual                           int64                    `json:"kolekbi_manual" db:"kolekbi_manual"`
+	KolekBprManual                          int64                    `json:"kolekbpr_manual" db:"kolekbpr_manual"`
+	KolekBIPinjaman                         int64                    `json:"kolekbi_pinjaman" db:"kolekbi_pinjaman"`
+	KolekBPRPinjaman                        int64                    `json:"kolekbpr_pinjaman" db:"kolekbpr_pinjaman"`
+	RecKoreksiOleh                          string                   `json:"rec_koreksi_oleh" db:"rec_koreksi_oleh"`
+	RecKoreksiTglJam                        Rec                      `json:"rec_koreksi_tgljam" db:"rec_koreksi_tgljam"`
+	RecKoreksiLokasi                        string                   `json:"rec_koreksi_lokasi" db:"rec_koreksi_lokasi"`
+	ProfilRisikoIdentitasNasabah            string                   `json:"profilresiko_identitasnasabah" db:"profilresiko_identitasnasabah"`
+	ProfilRisikoLokasiUsaha                 string                   `json:"profilresiko_lokasiusaha" db:"profilresiko_lokasiusaha"`
+	ProfilRisikoJumlahTransaksi             string                   `json:"profilresiko_jumlahtransaksi" db:"profilresiko_jumlahtransaksi"`
+	ProfilRisikoKegiatanUsaha               string                   `json:"profilresiko_kegiatanusaha" db:"profilresiko_kegiatanusaha"`
+	ProfilRisikoStrukturKepemilikan         string                   `json:"profilresiko_strukturkepemilikan" db:"profilresiko_strukturkepemilikan"`
+	ProfilRisikoProdukJasaJaringan          string                   `json:"profilresiko_produkjasajaringan" db:"profilresiko_produkjasajaringan"`
+	ProfilRisikoInformasiLain               string                   `json:"profilresiko_informasilain" db:"profilresiko_informasilain"`
+	ProfilRisikoResumeAkhir                 string                   `json:"profilresiko_resumeakhir" db:"profilresiko_resumeakhir"`
+	ProfilRisikoProfil                      string                   `json:"profilresiko_profil" db:"profilresiko_profil"`
+	RecDibuatOleh                           string                   `json:"rec_dibuat_oleh" db:"rec_dibuat_oleh"`
+	RecDibuatTglJam                         Rec                      `json:"rec_dibuat_tgljam" db:"rec_dibuat_tgljam"`
+	RecDibuatLokasi                         string                   `json:"rec_dibuat_lokasi" db:"rec_dibuat_lokasi"`
+	RecDiupdateOleh                         string                   `json:"rec_diupdate_oleh" db:"rec_diupdate_oleh"`
+	RecDiupdateTglJam                       Rec                      `json:"rec_diupdate_tgljam" db:"rec_diupdate_tgljam"`
+	RecDiupdateLokasi                       string                   `json:"rec_diupdate_lokasi" db:"rec_diupdate_lokasi"`
+	RecTimestamp                            Rec                      `json:"rec_timestamp" db:"rec_timestamp"`
+	DataPengurusPerusahaan                  []DataPengurusPerusahaan `json:"datapengurusperusahaan" db:"datapengurusperusahaan"`
+	CustomField                             []any                    `json:"customfield" db:"customfield"`
+	DataDiklat                              []any                    `json:"datadiklat" db:"datadiklat"`
+	DataAhliWaris                           []DataAhliWaris          `json:"dataahliwaris" db:"dataahliwaris"`
+	StatusDokumen                           string                   `json:"status_dokumen" db:"status_dokumen"`
+	PlafondLimit                            any                      `json:"plafondlimit" db:"plafondlimit"`
+	Tabungan                                []struct {
+		ID              string `json:"id" db:"id"`
+		Currency        string `json:"currency" db:"currency"`
+		StatusDokumen   string `json:"status_dokumen" db:"status_dokumen"`
+		NoAlt           any    `json:"noalt" db:"noalt"`
+		TglBukaRekening string `json:"tglbukarekening" db:"tglbukarekening"`
+		Nama            string `json:"nama" db:"nama"`
+	} `json:"tabungan" db:"tabungan"`
 	Location struct {
-		LocationName string `json:"locationname"`
-	} `json:"location"`
+		LocationName string `json:"locationname" db:"locationname"`
+	} `json:"location" db:"location"`
+}
+
+type DataPengurusPerusahaan struct {
+	ID                      string  `json:"id" db:"id"`
+	NoCif                   string  `json:"nocif" db:"nocif"`
+	NoUrut                  int64   `json:"nourut" db:"nourut"`
+	Nama                    string  `json:"nama" db:"nama"`
+	NoNpwp                  string  `json:"nonpwp" db:"nonpwp"`
+	TempatLahir             string  `json:"tempatlahir" db:"tempatlahir"`
+	TglLahir                DateTZ  `json:"tgllahir" db:"tgllahir"`
+	JenisKelamin            string  `json:"jeniskelamin" db:"jeniskelamin"`
+	NoKtp                   string  `json:"noktp" db:"noktp"`
+	TglDikeluarkan          any     `json:"tgldikeluarkan" db:"tgldikeluarkan"`
+	BerlakuSampai           any     `json:"berlakusampai" db:"berlakusampai"`
+	BerlakuSeumurHidup      any     `json:"berlakuseumurhidup" db:"berlakuseumurhidup"`
+	JabatanPengurus         string  `json:"jabatanpengurus" db:"jabatanpengurus"`
+	KepemilikanSaham        int64   `json:"kepemilikansaham" db:"kepemilikansaham"`
+	AlamatPengurusAlamat1   string  `json:"alamatpengurus_alamat1" db:"alamatpengurus_alamat1"`
+	AlamatPengurusAlamat2   string  `json:"alamatpengurus_alamat2" db:"alamatpengurus_alamat2"`
+	AlamatPengurusRt        string  `json:"alamatpengurus_rt" db:"alamatpengurus_rt"`
+	AlamatPengurusRw        string  `json:"alamatpengurus_rw" db:"alamatpengurus_rw"`
+	AlamatPengurusKelurahan string  `json:"alamatpengurus_kelurahan" db:"alamatpengurus_kelurahan"`
+	AlamatPengurusKecamatan string  `json:"alamatpengurus_kecamatan" db:"alamatpengurus_kecamatan"`
+	AlamatPengurusKota      string  `json:"alamatpengurus_kota" db:"alamatpengurus_kota"`
+	AlamatPengurusPropinsi  string  `json:"alamatpengurus_propinsi" db:"alamatpengurus_propinsi"`
+	AlamatPengurusKodePos   string  `json:"alamatpengurus_kodepos" db:"alamatpengurus_kodepos"`
+	AlamatPengurusKodeArea  string  `json:"alamatpengurus_kodearea" db:"alamatpengurus_kodearea"`
+	AlamatPengurusNoTelp    string  `json:"alamatpengurus_notelp" db:"alamatpengurus_notelp"`
+	AlamatPengurusNoHp      string  `json:"alamatpengurus_nohp" db:"alamatpengurus_nohp"`
+	AlamatPengurusNoFax     string  `json:"alamatpengurus_nofax" db:"alamatpengurus_nofax"`
+	TempatDikeluarkan       *string `json:"tempat_dikeluarkan" db:"tempat_dikeluarkan"`
+	RecTimestamp            Rec     `json:"rec_timestamp" db:"rec_timestamp"`
+}
+
+type DataAhliWaris struct {
+	ID                    string `json:"id" db:"id"`
+	NoUrut                string `json:"nourut" db:"nourut"`
+	NoCif                 string `json:"nocif" db:"nocif"`
+	AhliWarisNama         any    `json:"ahliwaris_nama" db:"ahliwaris_nama"`
+	AhliWarisHubDgnKontak any    `json:"ahliwaris_hubdgnkontak" db:"ahliwaris_hubdgnkontak"`
+	AhliWarisAlamat1      any    `json:"ahliwaris_alamat1" db:"ahliwaris_alamat1"`
+	AhliWarisAlamat2      any    `json:"ahliwaris_alamat2" db:"ahliwaris_alamat2"`
+	AhliWarisRt           any    `json:"ahliwaris_rt" db:"ahliwaris_rt"`
+	AhliWarisRw           any    `json:"ahliwaris_rw" db:"ahliwaris_rw"`
+	AhliWarisKelurahan    any    `json:"ahliwaris_kelurahan" db:"ahliwaris_kelurahan"`
+	AhliWarisKecamatan    any    `json:"ahliwaris_kecamatan" db:"ahliwaris_kecamatan"`
+	AhliWarisKota         any    `json:"ahliwaris_kota" db:"ahliwaris_kota"`
+	AhliWarisPropinsi     any    `json:"ahliwaris_propinsi" db:"ahliwaris_propinsi"`
+	AhliWarisNoTelp       any    `json:"ahliwaris_notelp" db:"ahliwaris_notelp"`
+	AhliWarisNoHp         any    `json:"ahliwaris_nohp" db:"ahliwaris_nohp"`
+	AhliWarisNoFax        any    `json:"ahliwaris_nofax" db:"ahliwaris_nofax"`
+	AhliWarisKodePos      string `json:"ahliwaris_kodepos" db:"ahliwaris_kodepos"`
+	RecTimestamp          Rec    `json:"rec_timestamp" db:"rec_timestamp"`
 }
