@@ -1,201 +1,201 @@
 package models
 
 type Loan struct {
-	Locationid                    string                    `json:"locationid"`
+	LocationID                    string                    `json:"locationid"`
 	RecDibuatLokasi               string                    `json:"rec_dibuat_lokasi"`
-	RestrukturNoakadAkhir         string                    `json:"restruktur_noakad_akhir"`
-	RestrukturTanggalakhirakad    DateTZ                    `json:"restruktur_tanggalakhirakad"`
-	RestrukturTanggalawal         interface{}               `json:"restruktur_tanggalawal"`
-	RestrukturTanggalakhir        interface{}               `json:"restruktur_tanggalakhir"`
-	RestrukturCara                interface{}               `json:"restruktur_cara"`
+	RestrukturNoAkadAkhir         string                    `json:"restruktur_noakad_akhir"`
+	RestrukturTanggalAkhirAkad    DateTZ                    `json:"restruktur_tanggalakhirakad"`
+	RestrukturTanggalAwal         any                       `json:"restruktur_tanggalawal"`
+	RestrukturTanggalAkhir        any                       `json:"restruktur_tanggalakhir"`
+	RestrukturCara                any                       `json:"restruktur_cara"`
 	RestrukturFrekuensi           string                    `json:"restruktur_frekuensi"`
-	Tanggalmulaitunggakan         interface{}               `json:"tanggalmulaitunggakan"`
+	TanggalMulaiTunggakan         any                       `json:"tanggalmulaitunggakan"`
 	Lokasi                        string                    `json:"lokasi"`
 	ID                            string                    `json:"id"`
-	Nopk                          string                    `json:"nopk"`
-	Namanasabah                   string                    `json:"namanasabah"`
-	Aliasnama                     string                    `json:"aliasnama"`
-	Statusrekening                string                    `json:"statusrekening"`
+	NoPk                          string                    `json:"nopk"`
+	NamaNasabah                   string                    `json:"namanasabah"`
+	AliasNama                     string                    `json:"aliasnama"`
+	StatusRekening                string                    `json:"statusrekening"`
 	TglPencairan                  string                    `json:"tgl_pencairan"`
 	RecDibuatOleh                 string                    `json:"rec_dibuat_oleh"`
-	Noalt                         string                    `json:"noalt"`
-	ProdukJenispinjaman           string                    `json:"produk_jenispinjaman"`
-	Produkid                      string                    `json:"produkid"`
-	Idproduk                      string                    `json:"idproduk"`
+	NoAlt                         string                    `json:"noalt"`
+	ProdukJenisPinjaman           string                    `json:"produk_jenispinjaman"`
+	ProdukID                      string                    `json:"produkid"`
+	IDProduk                      string                    `json:"idproduk"`
 	Currency                      string                    `json:"currency"`
-	Plafondlimit                  string                    `json:"plafondlimit"`
-	JmlpokokPinjaman              string                    `json:"jmlpokok_pinjaman"`
-	Jangkawaktu                   string                    `json:"jangkawaktu"`
-	ProdukJenisangsuran           string                    `json:"produk_jenisangsuran"`
+	PlafondLimit                  string                    `json:"plafondlimit"`
+	JmlPokokPinjaman              string                    `json:"jmlpokok_pinjaman"`
+	JangkaWaktu                   string                    `json:"jangkawaktu"`
+	ProdukJenisAngsuran           string                    `json:"produk_jenisangsuran"`
 	TglAngsuran                   int64                     `json:"tgl_angsuran"`
-	SidSifatkredit2               string                    `json:"sid_sifatkredit2"`
-	SidJenispenggunaan            string                    `json:"sid_jenispenggunaan"`
-	SidSumberdanapelunasan        string                    `json:"sid_sumberdanapelunasan"`
-	SidGolongankredit             string                    `json:"sid_golongankredit"`
-	SidOrientasipenggunaan        string                    `json:"sid_orientasipenggunaan"`
-	SidSektorekonomi              string                    `json:"sid_sektorekonomi"`
-	Pejabatkredit                 interface{}               `json:"pejabatkredit"`
-	Pejabatkreditdua              interface{}               `json:"pejabatkreditdua"`
-	SidSektorekonomi2             string                    `json:"sid_sektorekonomi2"`
-	SidSifatkredit                string                    `json:"sid_sifatkredit"`
-	Datapenjamin                  string                    `json:"datapenjamin"`
-	Mengetahuisuamiistri          string                    `json:"mengetahuisuamiistri"`
-	DPNama                        interface{}               `json:"dp_nama"`
-	DPNoktp                       interface{}               `json:"dp_noktp"`
-	DPAlamat                      interface{}               `json:"dp_alamat"`
-	DPTempatlahir                 interface{}               `json:"dp_tempatlahir"`
-	DPTgllahir                    interface{}               `json:"dp_tgllahir"`
-	DPJeniskelamin                interface{}               `json:"dp_jeniskelamin"`
-	DPGoldarah                    interface{}               `json:"dp_goldarah"`
-	DPAgama                       interface{}               `json:"dp_agama"`
-	DPStatusperkawinan            interface{}               `json:"dp_statusperkawinan"`
-	DPPekerjaan                   interface{}               `json:"dp_pekerjaan"`
-	DPNocif                       interface{}               `json:"dp_nocif"`
-	DPHubungan                    interface{}               `json:"dp_hubungan"`
-	DPKewarganegaraan             interface{}               `json:"dp_kewarganegaraan"`
-	DPTempatterbit                interface{}               `json:"dp_tempatterbit"`
-	DPTglterbit                   interface{}               `json:"dp_tglterbit"`
-	DPBerlakuseumurhidup          interface{}               `json:"dp_berlakuseumurhidup"`
-	DPTglberlakusampai            interface{}               `json:"dp_tglberlakusampai"`
-	SidJenisusaha                 string                    `json:"sid_jenisusaha"`
-	Bungaflat                     float64                   `json:"bungaflat"`
-	Noperjanjiankredit            string                    `json:"noperjanjiankredit"`
-	Journalid                     string                    `json:"journalid"`
-	Persendendatunggakan          int64                     `json:"persendendatunggakan"`
-	Bungaberjenjang               string                    `json:"bungaberjenjang"`
-	NorekgabunganBnpl             string                    `json:"norekgabungan_bnpl"`
-	TglTutup                      interface{}               `json:"tgl_tutup"`
+	SidSifatKredit2               string                    `json:"sid_sifatkredit2"`
+	SidJenisPenggunaan            string                    `json:"sid_jenispenggunaan"`
+	SidSumberDanaPelunasan        string                    `json:"sid_sumberdanapelunasan"`
+	SidGolonganKredit             string                    `json:"sid_golongankredit"`
+	SidOrientasiPenggunaan        string                    `json:"sid_orientasipenggunaan"`
+	SidSektorEkonomi              string                    `json:"sid_sektorekonomi"`
+	PejabatKredit                 any                       `json:"pejabatkredit"`
+	PejabatKreditDua              any                       `json:"pejabatkreditdua"`
+	SidSektorEkonomi2             string                    `json:"sid_sektorekonomi2"`
+	SidSifatKredit                string                    `json:"sid_sifatkredit"`
+	DataPenjamin                  string                    `json:"datapenjamin"`
+	MengetahuiSuamiIstri          string                    `json:"mengetahuisuamiistri"`
+	DPNama                        any                       `json:"dp_nama"`
+	DPNoKtp                       any                       `json:"dp_noktp"`
+	DPAlamat                      any                       `json:"dp_alamat"`
+	DPTempatLahir                 any                       `json:"dp_tempatlahir"`
+	DPTglLahir                    any                       `json:"dp_tgllahir"`
+	DPJenisKelamin                any                       `json:"dp_jeniskelamin"`
+	DPGolDarah                    any                       `json:"dp_goldarah"`
+	DPAgama                       any                       `json:"dp_agama"`
+	DPStatusPerkawinan            any                       `json:"dp_statusperkawinan"`
+	DPPekerjaan                   any                       `json:"dp_pekerjaan"`
+	DPNoCif                       any                       `json:"dp_nocif"`
+	DPHubungan                    any                       `json:"dp_hubungan"`
+	DPKewarganegaraan             any                       `json:"dp_kewarganegaraan"`
+	DPTempatTerbit                any                       `json:"dp_tempatterbit"`
+	DPTglTerbit                   any                       `json:"dp_tglterbit"`
+	DPBerlakuSeumurHidup          any                       `json:"dp_berlakuseumurhidup"`
+	DPTglBerlakuSampai            any                       `json:"dp_tglberlakusampai"`
+	SidJenisUsaha                 string                    `json:"sid_jenisusaha"`
+	BungaFlat                     float64                   `json:"bungaflat"`
+	NoPerjanjianKredit            string                    `json:"noperjanjiankredit"`
+	JournalID                     string                    `json:"journalid"`
+	PersenDendaTunggakan          int64                     `json:"persendendatunggakan"`
+	BungaBerjenjang               string                    `json:"bungaberjenjang"`
+	NoRekGabunganBnpl             string                    `json:"norekgabungan_bnpl"`
+	TglTutup                      any                       `json:"tgl_tutup"`
 	Titipan                       int64                     `json:"titipan"`
 	Periode                       string                    `json:"periode"`
-	ProdukSukubunga               float64                   `json:"produk_sukubunga"`
-	ProdukPerubahansukubunga      string                    `json:"produk_perubahansukubunga"`
-	Tujuankredit                  interface{}               `json:"tujuankredit"`
-	TglterakhirBayarpokokdanbunga DateTZ                    `json:"tglterakhir_bayarpokokdanbunga"`
-	TglbayarpokokbungaBerikutnya  DateTZ                    `json:"tglbayarpokokbunga_berikutnya"`
-	Tgljtterakhir                 DateTZ                    `json:"tgljtterakhir"`
-	Tgljtberikutnya               DateTZ                    `json:"tgljtberikutnya"`
-	Outstandingpinjaman           string                    `json:"outstandingpinjaman"`
-	Tunggakanpokok                string                    `json:"tunggakanpokok"`
+	ProdukSukuBunga               float64                   `json:"produk_sukubunga"`
+	ProdukPerubahanSukuBunga      string                    `json:"produk_perubahansukubunga"`
+	TujuanKredit                  any                       `json:"tujuankredit"`
+	TglTerakhirBayarPokokDanBunga DateTZ                    `json:"tglterakhir_bayarpokokdanbunga"`
+	TglBayarPokokBungaBerikutnya  DateTZ                    `json:"tglbayarpokokbunga_berikutnya"`
+	TglJtTerakhir                 DateTZ                    `json:"tgljtterakhir"`
+	TglJtBerikutnya               DateTZ                    `json:"tgljtberikutnya"`
+	OutstandingPinjaman           string                    `json:"outstandingpinjaman"`
+	TunggakanPokok                string                    `json:"tunggakanpokok"`
 	Accrue                        string                    `json:"accrue"`
-	Decimalpoint                  int64                     `json:"decimalpoint"`
-	Tunggakanbunga                string                    `json:"tunggakanbunga"`
-	Dendatunggakan                string                    `json:"dendatunggakan"`
+	DecimalPoint                  int64                     `json:"decimalpoint"`
+	TunggakanBunga                string                    `json:"tunggakanbunga"`
+	DendaTunggakan                string                    `json:"dendatunggakan"`
 	Dpd                           int64                     `json:"dpd"`
-	Kolekbi                       int64                     `json:"kolekbi"`
-	Kolekbpr                      int64                     `json:"kolekbpr"`
-	Updatekolekbi                 string                    `json:"updatekolekbi"`
-	Totalcollateralvalue          int64                     `json:"totalcollateralvalue"`
-	Totalassetvalue               int64                     `json:"totalassetvalue"`
-	Nocif                         string                    `json:"nocif"`
-	Jenisnasabah                  string                    `json:"jenisnasabah"`
-	Tglbukacif                    DateTZ                    `json:"tglbukacif"`
+	KolekBi                       int64                     `json:"kolekbi"`
+	KolekBpr                      int64                     `json:"kolekbpr"`
+	UpdateKolekBi                 string                    `json:"updatekolekbi"`
+	TotalCollateralValue          int64                     `json:"totalcollateralvalue"`
+	TotalAssetValue               int64                     `json:"totalassetvalue"`
+	NoCif                         string                    `json:"nocif"`
+	JenisNasabah                  string                    `json:"jenisnasabah"`
+	TglBukaCif                    DateTZ                    `json:"tglbukacif"`
 	StatusDokumen                 string                    `json:"status_dokumen"`
-	DataalamatKtpAlamat1          string                    `json:"dataalamat_ktp_alamat1"`
-	DataalamatKtpAlamat2          interface{}               `json:"dataalamat_ktp_alamat2"`
-	DataalamatKtpRt               string                    `json:"dataalamat_ktp_rt"`
-	DataalamatKtpRw               string                    `json:"dataalamat_ktp_rw"`
-	DataalamatKtpKelurahan        string                    `json:"dataalamat_ktp_kelurahan"`
-	DataalamatKtpKecamatan        string                    `json:"dataalamat_ktp_kecamatan"`
-	DataalamatKtpKota             string                    `json:"dataalamat_ktp_kota"`
-	DataalamatKtpPropinsi         string                    `json:"dataalamat_ktp_propinsi"`
-	DataalamatKtpKodepos          string                    `json:"dataalamat_ktp_kodepos"`
-	DataalamatRumahNohp           string                    `json:"dataalamat_rumah_nohp"`
-	NorektabPencairanpinjaman     string                    `json:"norektab_pencairanpinjaman"`
-	NorektabBayarangsuran         string                    `json:"norektab_bayarangsuran"`
-	NorektabPencairanpinjaman2    string                    `json:"norektab_pencairanpinjaman2"`
-	NorektabBayarangsuran2        string                    `json:"norektab_bayarangsuran2"`
-	Jenisjaminan2                 string                    `json:"jenisjaminan2"`
-	Jenisjaminan                  string                    `json:"jenisjaminan"`
-	Totalnilaipasar               string                    `json:"totalnilaipasar"`
+	DataAlamatKtpAlamat1          string                    `json:"dataalamat_ktp_alamat1"`
+	DataAlamatKtpAlamat2          any                       `json:"dataalamat_ktp_alamat2"`
+	DataAlamatKtpRt               string                    `json:"dataalamat_ktp_rt"`
+	DataAlamatKtpRw               string                    `json:"dataalamat_ktp_rw"`
+	DataAlamatKtpKelurahan        string                    `json:"dataalamat_ktp_kelurahan"`
+	DataAlamatKtpKecamatan        string                    `json:"dataalamat_ktp_kecamatan"`
+	DataAlamatKtpKota             string                    `json:"dataalamat_ktp_kota"`
+	DataAlamatKtpPropinsi         string                    `json:"dataalamat_ktp_propinsi"`
+	DataAlamatKtpKodePos          string                    `json:"dataalamat_ktp_kodepos"`
+	DataAlamatRumahNoHp           string                    `json:"dataalamat_rumah_nohp"`
+	NoRekTabPencairanPinjaman     string                    `json:"norektab_pencairanpinjaman"`
+	NoRekTabBayarAngsuran         string                    `json:"norektab_bayarangsuran"`
+	NoRekTabPencairanPinjaman2    string                    `json:"norektab_pencairanpinjaman2"`
+	NoRekTabBayarAngsuran2        string                    `json:"norektab_bayarangsuran2"`
+	JenisJaminan2                 string                    `json:"jenisjaminan2"`
+	JenisJaminan                  string                    `json:"jenisjaminan"`
+	TotalNilaiPasar               string                    `json:"totalnilaipasar"`
 	Terpakai                      int64                     `json:"terpakai"`
-	Totalnilaijaminan             int64                     `json:"totalnilaijaminan"`
+	TotalNilaiJaminan             int64                     `json:"totalnilaijaminan"`
 	Jaminan                       string                    `json:"jaminan"`
-	Jmlagunan                     int64                     `json:"jmlagunan"`
-	Tglhapusbuku                  interface{}               `json:"tglhapusbuku"`
-	Totalhapusbuku                string                    `json:"totalhapusbuku"`
-	NilaihapusbukuSaldopinjaman   interface{}               `json:"nilaihapusbuku_saldopinjaman"`
-	NilaihapusbukuBungaberjalan   interface{}               `json:"nilaihapusbuku_bungaberjalan"`
-	NilaihapusbukuTunggakanbunga  interface{}               `json:"nilaihapusbuku_tunggakanbunga"`
-	NilaihapusbukuTunggakandenda  interface{}               `json:"nilaihapusbuku_tunggakandenda"`
-	Ppapblnterakhir               string                    `json:"ppapblnterakhir"`
-	Ppaptglterakhir               string                    `json:"ppaptglterakhir"`
+	JmlAgunan                     int64                     `json:"jmlagunan"`
+	TglHapusBuku                  any                       `json:"tglhapusbuku"`
+	TotalHapusBuku                string                    `json:"totalhapusbuku"`
+	NilaiHapusBukuSaldoPinjaman   any                       `json:"nilaihapusbuku_saldopinjaman"`
+	NilaiHapusBukuBungaBerjalan   any                       `json:"nilaihapusbuku_bungaberjalan"`
+	NilaiHapusBukuTunggakanBunga  any                       `json:"nilaihapusbuku_tunggakanbunga"`
+	NilaiHapusBukuTunggakanDenda  any                       `json:"nilaihapusbuku_tunggakandenda"`
+	PpapBlnTerakhir               string                    `json:"ppapblnterakhir"`
+	PpapTglTerakhir               string                    `json:"ppaptglterakhir"`
 	Marketing                     string                    `json:"marketing"`
-	DatacsNotes                   interface{}               `json:"datacs_notes"`
-	Analiskredit                  interface{}               `json:"analiskredit"`
-	AnaliskreditNotes             interface{}               `json:"analiskredit_notes"`
+	DataCsNotes                   any                       `json:"datacs_notes"`
+	AnalisKredit                  any                       `json:"analiskredit"`
+	AnalisKreditNotes             any                       `json:"analiskredit_notes"`
 	HTPokok                       string                    `json:"ht_pokok"`
 	HTBunga                       string                    `json:"ht_bunga"`
-	Tglhapustagih                 interface{}               `json:"tglhapustagih"`
-	TotalHT                       interface{}               `json:"total_ht"`
-	JmlpokokPinjaman2             int64                     `json:"jmlpokok_pinjaman2"`
-	Totalnilaipasar2              int64                     `json:"totalnilaipasar2"`
-	Serviceid                     interface{}               `json:"serviceid"`
-	Groupid                       interface{}               `json:"groupid"`
-	DatatanahBangunan             []DatatanahBangunan       `json:"datatanah_bangunan"`
-	Jenisjaminantanah             string                    `json:"jenisjaminantanah"`
-	Jenisjaminanlainnya           string                    `json:"jenisjaminanlainnya"`
-	Biayapencairan                []Biayapencairan          `json:"biayapencairan"`
+	TglHapusTagih                 any                       `json:"tglhapustagih"`
+	TotalHT                       any                       `json:"total_ht"`
+	JmlPokokPinjaman2             int64                     `json:"jmlpokok_pinjaman2"`
+	TotalNilaiPasar2              int64                     `json:"totalnilaipasar2"`
+	ServiceID                     any                       `json:"serviceid"`
+	GroupID                       any                       `json:"groupid"`
+	DataTanahBangunan             []DatatanahBangunan       `json:"datatanah_bangunan"`
+	JenisJaminanTanah             string                    `json:"jenisjaminantanah"`
+	JenisJaminanLainnya           string                    `json:"jenisjaminanlainnya"`
+	BiayaPencairan                []Biayapencairan          `json:"biayapencairan"`
 	Tabungan                      []Tabungan                `json:"tabungan"`
-	Jadwalangsuran                []Jadwalangsuran          `json:"jadwalangsuran"`
-	Historybayar                  []Historybayar            `json:"historybayar"`
-	Tempatpenyimpanan             bool                      `json:"tempatpenyimpanan"`
-	RekeningBungaberjenjang       []RekeningBungaberjenjang `json:"rekening_bungaberjenjang"`
+	JadwalAngsuran                []Jadwalangsuran          `json:"jadwalangsuran"`
+	HistoryBayar                  []Historybayar            `json:"historybayar"`
+	TempatPenyimpanan             bool                      `json:"tempatpenyimpanan"`
+	RekeningBungaBerjenjang       []RekeningBungaberjenjang `json:"rekening_bungaberjenjang"`
 	Channeling                    bool                      `json:"channeling"`
-	Asuransidata                  string                    `json:"asuransidata"`
+	AsuransiData                  string                    `json:"asuransidata"`
 }
 
 type Biayapencairan struct {
-	Namabiaya   string `json:"namabiaya"`
+	NamaBiaya   string `json:"namabiaya"`
 	JumlahBiaya string `json:"jumlah_biaya"`
-	Hitungdwp   string `json:"hitungdwp"`
+	HitungDwp   string `json:"hitungdwp"`
 }
 
 type DatatanahBangunan struct {
-	TanahNosertifikat          string      `json:"tanah_nosertifikat"`
-	TanahStatussertifikat      string      `json:"tanah_statussertifikat"`
-	TanahImb                   interface{} `json:"tanah_imb"`
-	TanahNoimb                 interface{} `json:"tanah_noimb"`
-	TanahLokasi                interface{} `json:"tanah_lokasi"`
-	TanahRt                    interface{} `json:"tanah_rt"`
-	TanahRw                    interface{} `json:"tanah_rw"`
-	TanahKelurahan             interface{} `json:"tanah_kelurahan"`
-	TanahKecamatan             interface{} `json:"tanah_kecamatan"`
-	TanahKota                  interface{} `json:"tanah_kota"`
-	TanahProvinsi              interface{} `json:"tanah_provinsi"`
-	TanahLuas                  interface{} `json:"tanah_luas"`
-	TanahSurattanahdikeluarkan string      `json:"tanah_surattanahdikeluarkan"`
-	TanahKodepos               interface{} `json:"tanah_kodepos"`
-	TanahAtasnama              string      `json:"tanah_atasnama"`
-	TanahNilaijaminan          int64       `json:"tanah_nilaijaminan"`
-	TanahNilaipasar            int64       `json:"tanah_nilaipasar"`
-	SidJenispengikatan         string      `json:"sid_jenispengikatan"`
-	SidDatidua                 string      `json:"sid_datidua"`
-	Ansuransi                  string      `json:"ansuransi"`
-	Tglpenilaian               DateTZ      `json:"tglpenilaian"`
-	TanahNilaijaminanreal      int64       `json:"tanah_nilaijaminanreal"`
-	Persenppap                 string      `json:"persenppap"`
-	TanahTglsertifikat         interface{} `json:"tanah_tglsertifikat"`
-	TanahNosuratukur           interface{} `json:"tanah_nosuratukur"`
-	TanahTglukur               interface{} `json:"tanah_tglukur"`
+	TanahNoSertifikat          string `json:"tanah_nosertifikat"`
+	TanahStatusSertifikat      string `json:"tanah_statussertifikat"`
+	TanahImb                   any    `json:"tanah_imb"`
+	TanahNoImb                 any    `json:"tanah_noimb"`
+	TanahLokasi                any    `json:"tanah_lokasi"`
+	TanahRt                    any    `json:"tanah_rt"`
+	TanahRw                    any    `json:"tanah_rw"`
+	TanahKelurahan             any    `json:"tanah_kelurahan"`
+	TanahKecamatan             any    `json:"tanah_kecamatan"`
+	TanahKota                  any    `json:"tanah_kota"`
+	TanahProvinsi              any    `json:"tanah_provinsi"`
+	TanahLuas                  any    `json:"tanah_luas"`
+	TanahSuratTanahDikeluarkan string `json:"tanah_surattanahdikeluarkan"`
+	TanahKodePos               any    `json:"tanah_kodepos"`
+	TanahAtasNama              string `json:"tanah_atasnama"`
+	TanahNilaiJaminan          int64  `json:"tanah_nilaijaminan"`
+	TanahNilaiPasar            int64  `json:"tanah_nilaipasar"`
+	SidJenisPengikatan         string `json:"sid_jenispengikatan"`
+	SidDatiDua                 string `json:"sid_datidua"`
+	Asuransi                   string `json:"ansuransi"`
+	TglPenilaian               DateTZ `json:"tglpenilaian"`
+	TanahNilaiJaminanReal      int64  `json:"tanah_nilaijaminanreal"`
+	PersenPpap                 string `json:"persenppap"`
+	TanahTglSertifikat         any    `json:"tanah_tglsertifikat"`
+	TanahNoSuratUkur           any    `json:"tanah_nosuratukur"`
+	TanahTglUkur               any    `json:"tanah_tglukur"`
 }
 
 type Historybayar struct {
-	Tgl                 DateTZ      `json:"tgl"`
-	Angsuranke          int64       `json:"angsuranke"`
-	Tglbayar            string      `json:"tglbayar"`
-	Currency            string      `json:"currency"`
-	Tgljt               string      `json:"tgljt"`
-	Totalbayar          string      `json:"totalbayar"`
-	BayarPokok          string      `json:"bayar_pokok"`
-	BayarBunga          string      `json:"bayar_bunga"`
-	BayarDenda          string      `json:"bayar_denda"`
-	BayarDendapelunasan string      `json:"bayar_dendapelunasan"`
-	Nominaldwp          string      `json:"nominaldwp"`
-	Nojurnal            string      `json:"nojurnal"`
-	Cabang              string      `json:"cabang"`
-	Keterangan          interface{} `json:"keterangan"`
-	Officer             string      `json:"officer"`
-	Otor                string      `json:"otor"`
+	Tgl                 DateTZ `json:"tgl"`
+	AngsuranKe          int64  `json:"angsuranke"`
+	TglBayar            string `json:"tglbayar"`
+	Currency            string `json:"currency"`
+	Tgljt               string `json:"tgljt"`
+	TotalBayar          string `json:"totalbayar"`
+	BayarPokok          string `json:"bayar_pokok"`
+	BayarBunga          string `json:"bayar_bunga"`
+	BayarDenda          string `json:"bayar_denda"`
+	BayarDendaPelunasan string `json:"bayar_dendapelunasan"`
+	NominalDwp          string `json:"nominaldwp"`
+	NoJurnal            string `json:"nojurnal"`
+	Cabang              string `json:"cabang"`
+	Keterangan          any    `json:"keterangan"`
+	Officer             string `json:"officer"`
+	Otor                string `json:"otor"`
 }
 
 type Jadwalangsuran struct {
@@ -207,15 +207,15 @@ type Jadwalangsuran struct {
 	BayarPokok   string `json:"bayar_pokok"`
 	BayarDenda   string `json:"bayar_denda"`
 	BayarBunga   string `json:"bayar_bunga"`
-	Sisapinjaman string `json:"sisapinjaman"`
-	Statusbayar  string `json:"statusbayar"`
-	Angsuranke   int64  `json:"angsuranke"`
+	SisaPinjaman string `json:"sisapinjaman"`
+	StatusBayar  string `json:"statusbayar"`
+	AngsuranKe   int64  `json:"angsuranke"`
 }
 
 type RekeningBungaberjenjang struct {
 	ID           string       `json:"id"`
-	Nourut       string       `json:"nourut"`
-	Norekening   string       `json:"norekening"`
+	NoUrut       string       `json:"nourut"`
+	NoRekening   string       `json:"norekening"`
 	Tenor        int64        `json:"tenor"`
 	Bunga        float64      `json:"bunga"`
 	RecTimestamp RecTimestamp `json:"rec_timestamp"`
@@ -228,11 +228,11 @@ type RecTimestamp struct {
 
 type Tabungan struct {
 	ID              string  `json:"id"`
-	Namanasabah     string  `json:"namanasabah"`
-	Produkid        string  `json:"produkid"`
-	Tglbukarekening *DateTZ `json:"tglbukarekening"`
+	NamaNasabah     string  `json:"namanasabah"`
+	ProdukID        string  `json:"produkid"`
+	TglBukaRekening *DateTZ `json:"tglbukarekening"`
 	Currency        string  `json:"currency"`
 	StatusDokumen   string  `json:"status_dokumen"`
 	Saldo           string  `json:"saldo"`
-	Saldodebit      string  `json:"saldodebit"`
+	SaldoDebit      string  `json:"saldodebit"`
 }
