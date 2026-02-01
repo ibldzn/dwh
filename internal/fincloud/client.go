@@ -295,6 +295,43 @@ func (c *Client) DownloadReport(ctx context.Context, name string, params ...any)
 	return string(data), nil
 }
 
+func (c *Client) DownloadReportFromMaintenance(ctx context.Context, file, path string) (string, error) {
+	// /system/downloaderlaporan/download.php?file=cbrcustomer.csv&path=/app/report/cbr/20251231
+	sessionId, ok := SessionIDFromContext(ctx)
+	if !ok || sessionId == "" {
+		return "", errors.New("missing session ID in context")
+	}
+
+	req, err := c.newRequest(ctx, http.MethodGet, "/system/downloaderlaporan/download.php", nil)
+	if err != nil {
+		return "", err
+	}
+
+	q := req.URL.Query()
+	q.Set("file", file)
+	q.Set("path", path)
+	req.URL.RawQuery = q.Encode()
+
+	AttachSession(req, sessionId)
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("download report failed: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 // Do executes the provided request using the configured HTTP client.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return c.cfg.HTTPClient.Do(req)

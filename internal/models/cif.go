@@ -1,90 +1,143 @@
 package models
 
+type LocationInfo struct {
+	LocationName string `json:"locationname,omitempty"`
+}
+
 type CIF struct {
-	ID                                      string                   `json:"id"`
-	NamaNasabah                             string                   `json:"namanasabah"`
-	JenisNasabah                            string                   `json:"jenisnasabah"`
-	PeroranganLamaMenempatiTahun            int64                    `json:"perorangan_lamamenempatitahun"`
-	PeroranganLamaMenempatiBulan            int64                    `json:"perorangan_lamamenempatibulan"`
-	PeroranganAlamatEmail                   string                   `json:"perorangan_alamatemail"`
-	PerusahaanNoNpwp                        string                   `json:"perusahaan_nonpwp"`
-	PerusahaanJenisBadanUsaha               string                   `json:"perusahaan_jenisbadanusaha"`
-	PerusahaanNoAktaAwalBerdiri             string                   `json:"perusahaan_noaktaawalberdiri"`
-	PerusahaanTempatAktaAwal                string                   `json:"perusahaan_tempataktaawal"`
-	PerusahaanTglAktaAwal                   DateTZ                   `json:"perusahaan_tglaktaawal"`
-	PerusahaanNoAktaAkhirBerdiri            string                   `json:"perusahaan_noaktaakhirberdiri"`
-	PerusahaanTempatAktaAkhir               string                   `json:"perusahaan_tempataktaakhir"`
-	PerusahaanTglAktaAkhir                  DateTZ                   `json:"perusahaan_tglaktaakhir"`
-	DataPekerjaanLamaBekerjaTahun           int64                    `json:"datapekerjaan_lamabekerjatahun"`
-	DataPekerjaanLamaBekerjaBulan           int64                    `json:"datapekerjaan_lamabekerjabulan"`
-	DataPekerjaanLamaBekerjaSebelumnyaTahun int64                    `json:"datapekerjaan_lamabekerjasebelumnyatahun"`
-	DataPekerjaanLamaBekerjaSebelumnyaBulan int64                    `json:"datapekerjaan_lamabekerjasebelumnyabulan"`
-	DataAlamatKtpAlamat1                    string                   `json:"dataalamat_ktp_alamat1"`
-	DataAlamatKtpKelurahan                  string                   `json:"dataalamat_ktp_kelurahan"`
-	DataAlamatKtpKecamatan                  string                   `json:"dataalamat_ktp_kecamatan"`
-	DataAlamatKtpKota                       string                   `json:"dataalamat_ktp_kota"`
-	DataAlamatKtpKodePos                    string                   `json:"dataalamat_ktp_kodepos"`
-	DataAlamatKtpPropinsi                   string                   `json:"dataalamat_ktp_propinsi"`
-	DataAlamatAlamatKantorAdalahAlamatAkta  string                   `json:"dataalamat_alamatkantoradalahalamatakta"`
-	DataAlamatKantorAlamat1                 string                   `json:"dataalamat_kantor_alamat1"`
-	DataAlamatKantorKelurahan               string                   `json:"dataalamat_kantor_kelurahan"`
-	DataAlamatKantorKecamatan               string                   `json:"dataalamat_kantor_kecamatan"`
-	DataAlamatKantorKota                    string                   `json:"dataalamat_kantor_kota"`
-	DataAlamatKantorKodePos                 int64                    `json:"dataalamat_kantor_kodepos"`
-	DataAlamatKantorPropinsi                string                   `json:"dataalamat_kantor_propinsi"`
-	DataAlamatKantorNoHp                    string                   `json:"dataalamat_kantor_nohp"`
-	DataKontakLainnyaKodePos                int64                    `json:"datakontaklainnya_kodepos"`
-	DataPenjaminKodePos                     int64                    `json:"datapenjamin_kodepos"`
-	DataPenjaminLamaBekerjaTahun            int64                    `json:"datapenjamin_lamabekerjatahun"`
-	DataPenjaminLamaBekerjaBulan            int64                    `json:"datapenjamin_lamabekerjabulan"`
-	DataUntukSidNamaAlias                   string                   `json:"datauntuksid_namaalias"`
-	DataKycLimitTransaksiSetoranTunai       int64                    `json:"datakyc_limittransaksi_setorantunai"`
-	DataKycLimitTransaksiSetoranNonTunai    int64                    `json:"datakyc_limittransaksi_setorannontunai"`
-	DataKycLimitTransaksiPenarikanTunai     int64                    `json:"datakyc_limittransaksi_penarikantunai"`
-	DataKycLimitTransaksiPenarikanNonTunai  int64                    `json:"datakyc_limittransaksi_penarikannontunai"`
-	DataKycLimitTransaksiFrekuensi          int64                    `json:"datakyc_limittransaksi_frekuensi"`
-	DataKycDataNasabahPerusahaanPenghasilan int64                    `json:"datakyc_datanasabahperusahaan_penghasilan"`
-	TglBukaCif                              DateTZ                   `json:"tglbukacif"`
-	KolekBiManual                           int64                    `json:"kolekbi_manual"`
-	KolekBprManual                          int64                    `json:"kolekbpr_manual"`
-	KolekBIPinjaman                         int64                    `json:"kolekbi_pinjaman"`
-	KolekBPRPinjaman                        int64                    `json:"kolekbpr_pinjaman"`
-	RecKoreksiOleh                          string                   `json:"rec_koreksi_oleh"`
-	RecKoreksiTglJam                        Rec                      `json:"rec_koreksi_tgljam"`
-	RecKoreksiLokasi                        string                   `json:"rec_koreksi_lokasi"`
-	ProfilRisikoIdentitasNasabah            string                   `json:"profilresiko_identitasnasabah"`
-	ProfilRisikoLokasiUsaha                 string                   `json:"profilresiko_lokasiusaha"`
-	ProfilRisikoJumlahTransaksi             string                   `json:"profilresiko_jumlahtransaksi"`
-	ProfilRisikoKegiatanUsaha               string                   `json:"profilresiko_kegiatanusaha"`
-	ProfilRisikoStrukturKepemilikan         string                   `json:"profilresiko_strukturkepemilikan"`
-	ProfilRisikoProdukJasaJaringan          string                   `json:"profilresiko_produkjasajaringan"`
-	ProfilRisikoInformasiLain               string                   `json:"profilresiko_informasilain"`
-	ProfilRisikoResumeAkhir                 string                   `json:"profilresiko_resumeakhir"`
-	ProfilRisikoProfil                      string                   `json:"profilresiko_profil"`
-	RecDibuatOleh                           string                   `json:"rec_dibuat_oleh"`
-	RecDibuatTglJam                         Rec                      `json:"rec_dibuat_tgljam"`
-	RecDibuatLokasi                         string                   `json:"rec_dibuat_lokasi"`
-	RecDiupdateOleh                         string                   `json:"rec_diupdate_oleh"`
-	RecDiupdateTglJam                       Rec                      `json:"rec_diupdate_tgljam"`
-	RecDiupdateLokasi                       string                   `json:"rec_diupdate_lokasi"`
-	RecTimestamp                            Rec                      `json:"rec_timestamp"`
-	DataPengurusPerusahaan                  []DataPengurusPerusahaan `json:"datapengurusperusahaan"`
-	CustomField                             []any                    `json:"customfield"`
-	DataDiklat                              []any                    `json:"datadiklat"`
-	DataAhliWaris                           []DataAhliWaris          `json:"dataahliwaris"`
-	StatusDokumen                           string                   `json:"status_dokumen"`
-	PlafondLimit                            any                      `json:"plafondlimit"`
-	Tabungan                                []struct {
-		ID              string `json:"id"`
-		Currency        string `json:"currency"`
-		StatusDokumen   string `json:"status_dokumen"`
-		NoAlt           any    `json:"noalt"`
-		TglBukaRekening string `json:"tglbukarekening"`
-		Nama            string `json:"nama"`
-	} `json:"tabungan"`
-	Location struct {
-		LocationName string `json:"locationname"`
-	} `json:"location"`
+	// Common (biasanya wajib)
+	ID             string `json:"id"`
+	NamaNasabah    string `json:"namanasabah,omitempty"`
+	JenisNasabah   string `json:"jenisnasabah,omitempty"`
+	JenisIdentitas string `json:"jenisidentitas,omitempty"`
+	NoAlt          string `json:"noalt,omitempty"`
+
+	TglBukaCif *DateTZ `json:"tglbukacif,omitempty"`
+
+	// Perorangan (optional)
+	PeroranganNoKtp            string  `json:"perorangan_noktp,omitempty"`
+	PeroranganTempatLahir      string  `json:"perorangan_tempatlahir,omitempty"`
+	PeroranganTglLahir         *DateTZ `json:"perorangan_tgllahir,omitempty"`
+	PeroranganJenisKelamin     string  `json:"perorangan_jeniskelamin,omitempty"`
+	PeroranganAgama            string  `json:"perorangan_agama,omitempty"`
+	PeroranganStatusPerkawinan string  `json:"perorangan_statusperkawinan,omitempty"`
+	PeroranganPendidikanFormal string  `json:"perorangan_pendidikanformal,omitempty"`
+	PeroranganNamaIbuKandung   string  `json:"perorangan_namaibukandung,omitempty"`
+	PeroranganJenisAnggota     string  `json:"perorangan_jenisanggota,omitempty"`
+
+	// Shared (exists in both)
+	PeroranganLamaMenempatiTahun int64 `json:"perorangan_lamamenempatitahun,omitempty"`
+	PeroranganLamaMenempatiBulan int64 `json:"perorangan_lamamenempatibulan,omitempty"`
+
+	// Pekerjaan (perorangan punya jenispekerjaan, badan tidak)
+	DataPekerjaanJenisPekerjaan string `json:"datapekerjaan_jenispekerjaan,omitempty"`
+
+	// Shared lama bekerja
+	DataPekerjaanLamaBekerjaTahun           int64 `json:"datapekerjaan_lamabekerjatahun,omitempty"`
+	DataPekerjaanLamaBekerjaBulan           int64 `json:"datapekerjaan_lamabekerjabulan,omitempty"`
+	DataPekerjaanLamaBekerjaSebelumnyaTahun int64 `json:"datapekerjaan_lamabekerjasebelumnyatahun,omitempty"`
+	DataPekerjaanLamaBekerjaSebelumnyaBulan int64 `json:"datapekerjaan_lamabekerjasebelumnyabulan,omitempty"`
+
+	// Alamat (perorangan)
+	DataAlamatKtpAlamat1                 string `json:"dataalamat_ktp_alamat1,omitempty"`
+	DataAlamatKtpRt                      string `json:"dataalamat_ktp_rt,omitempty"`
+	DataAlamatKtpRw                      string `json:"dataalamat_ktp_rw,omitempty"`
+	DataAlamatKtpKelurahan               string `json:"dataalamat_ktp_kelurahan,omitempty"`
+	DataAlamatKtpKecamatan               string `json:"dataalamat_ktp_kecamatan,omitempty"`
+	DataAlamatKtpKota                    string `json:"dataalamat_ktp_kota,omitempty"`
+	DataAlamatKtpKodepos                 string `json:"dataalamat_ktp_kodepos,omitempty"`
+	DataAlamatKtpPropinsi                string `json:"dataalamat_ktp_propinsi,omitempty"`
+	DataAlamatAlamatRumahAdalahAlamatKtp string `json:"dataalamat_alamatrumahadalahalamatktp,omitempty"`
+
+	DataAlamatRumahAlamat1   string `json:"dataalamat_rumah_alamat1,omitempty"`
+	DataAlamatRumahRt        string `json:"dataalamat_rumah_rt,omitempty"`
+	DataAlamatRumahRw        string `json:"dataalamat_rumah_rw,omitempty"`
+	DataAlamatRumahKelurahan string `json:"dataalamat_rumah_kelurahan,omitempty"`
+	DataAlamatRumahKecamatan string `json:"dataalamat_rumah_kecamatan,omitempty"`
+	DataAlamatRumahKota      string `json:"dataalamat_rumah_kota,omitempty"`
+	DataAlamatRumahKodepos   string `json:"dataalamat_rumah_kodepos,omitempty"`
+	DataAlamatRumahPropinsi  string `json:"dataalamat_rumah_propinsi,omitempty"`
+	DataAlamatRumahNoHp      string `json:"dataalamat_rumah_nohp,omitempty"`
+
+	// Shared ints
+	DataAlamatKantorKodepos      int64 `json:"dataalamat_kantor_kodepos,omitempty"`
+	DataKontakLainnyaKodepos     int64 `json:"datakontaklainnya_kodepos,omitempty"`
+	DataPenjaminKodepos          int64 `json:"datapenjamin_kodepos,omitempty"`
+	DataPenjaminLamaBekerjaTahun int64 `json:"datapenjamin_lamabekerjatahun,omitempty"`
+	DataPenjaminLamaBekerjaBulan int64 `json:"datapenjamin_lamabekerjabulan,omitempty"`
+
+	// SID/Labul (perorangan)
+	DataUntukSidNamaAlias       string `json:"datauntuksid_namaalias,omitempty"`
+	DataUntukSidGolonganDebitur string `json:"datauntuksid_golongandebitur,omitempty"`
+	DataUntukSidDati2Debitur    string `json:"datauntuksid_dati2debitur,omitempty"`
+	DataUntukSidStatus          string `json:"datauntuksid_status,omitempty"`
+	DataLabulGolonganDebitur    string `json:"datalabul_golongandebitur,omitempty"`
+
+	// KYC (shared)
+	DataKycLimitTransaksiSetoranTunai       int64 `json:"datakyc_limittransaksi_setorantunai,omitempty"`
+	DataKycLimitTransaksiSetoranNontunai    int64 `json:"datakyc_limittransaksi_setorannontunai,omitempty"`
+	DataKycLimitTransaksiPenarikanTunai     int64 `json:"datakyc_limittransaksi_penarikantunai,omitempty"`
+	DataKycLimitTransaksiPenarikanNontunai  int64 `json:"datakyc_limittransaksi_penarikannontunai,omitempty"`
+	DataKycLimitTransaksiFrekuensi          int64 `json:"datakyc_limittransaksi_frekuensi,omitempty"`
+	DataKycDataNasabahPerusahaanPenghasilan int64 `json:"datakyc_datanasabahperusahaan_penghasilan,omitempty"`
+
+	// Perusahaan (badan)
+	PerusahaanNoNpwp             string  `json:"perusahaan_nonpwp,omitempty"`
+	PerusahaanJenisBadanUsaha    string  `json:"perusahaan_jenisbadanusaha,omitempty"`
+	PerusahaanNoAktaAwalBerdiri  string  `json:"perusahaan_noaktaawalberdiri,omitempty"`
+	PerusahaanTempatAktaAwal     string  `json:"perusahaan_tempataktaawal,omitempty"`
+	PerusahaanTglAktaAwal        *DateTZ `json:"perusahaan_tglaktaawal,omitempty"`
+	PerusahaanNoAktaAkhirBerdiri string  `json:"perusahaan_noaktaakhirberdiri,omitempty"`
+	PerusahaanTempatAktaAkhir    string  `json:"perusahaan_tempataktaakhir,omitempty"`
+	PerusahaanTglAktaAkhir       *DateTZ `json:"perusahaan_tglaktaakhir,omitempty"`
+
+	// Kolektibilitas (shared)
+	KolekBiManual    int64 `json:"kolekbi_manual,omitempty"`
+	KolekBprManual   int64 `json:"kolekbpr_manual,omitempty"`
+	KolekBiPinjaman  int64 `json:"kolekbi_pinjaman,omitempty"`
+	KolekBprPinjaman int64 `json:"kolekbpr_pinjaman,omitempty"`
+
+	// Data KTP (perorangan)
+	DataKtpNik              string  `json:"dataktp_nik,omitempty"`
+	DataKtpNama             string  `json:"dataktp_nama,omitempty"`
+	DataKtpTempatLahir      string  `json:"dataktp_tempatlahir,omitempty"`
+	DataKtpJenisKelamin     string  `json:"dataktp_jeniskelamin,omitempty"`
+	DataKtpAlamat           string  `json:"dataktp_alamat,omitempty"`
+	DataKtpAgama            string  `json:"dataktp_agama,omitempty"`
+	DataKtpStatusPerkawinan string  `json:"dataktp_statusperkawinan,omitempty"`
+	DataKtpPekerjaan        string  `json:"dataktp_pekerjaan,omitempty"`
+	DataKtpTglLahir         *DateTZ `json:"dataktp_tgllahir,omitempty"`
+
+	// Profil risiko (shared)
+	ProfilResikoIdentitasNasabah    string `json:"profilresiko_identitasnasabah,omitempty"`
+	ProfilResikoLokasiUsaha         string `json:"profilresiko_lokasiusaha,omitempty"`
+	ProfilResikoJumlahTransaksi     string `json:"profilresiko_jumlahtransaksi,omitempty"`
+	ProfilResikoKegiatanUsaha       string `json:"profilresiko_kegiatanusaha,omitempty"`
+	ProfilResikoStrukturKepemilikan string `json:"profilresiko_strukturkepemilikan,omitempty"`
+	ProfilResikoProdukJasaJaringan  string `json:"profilresiko_produkjasajaringan,omitempty"`
+	ProfilResikoInformasiLain       string `json:"profilresiko_informasilain,omitempty"`
+	ProfilResikoResumeAkhir         string `json:"profilresiko_resumeakhir,omitempty"`
+	ProfilResikoProfil              string `json:"profilresiko_profil,omitempty"`
+
+	// Audit (pointer biar bisa omit)
+	RecDibuatOleh     string `json:"rec_dibuat_oleh,omitempty"`
+	RecDibuatTglJam   *Rec   `json:"rec_dibuat_tgljam,omitempty"`
+	RecDibuatLokasi   string `json:"rec_dibuat_lokasi,omitempty"`
+	RecDiupdateOleh   string `json:"rec_diupdate_oleh,omitempty"`
+	RecDiupdateTglJam *Rec   `json:"rec_diupdate_tgljam,omitempty"`
+	RecDiupdateLokasi string `json:"rec_diupdate_lokasi,omitempty"`
+	RecTimestamp      *Rec   `json:"rec_timestamp,omitempty"`
+
+	// Collections
+	DataPengurusPerusahaan []DataPengurusPerusahaan `json:"datapengurusperusahaan,omitempty"`
+	CustomField            []any                    `json:"customfield,omitempty"`
+	DataDiklat             []any                    `json:"datadiklat,omitempty"`
+	DataAhliWaris          []DataAhliWaris          `json:"dataahliwaris,omitempty"`
+
+	StatusDokumen string `json:"status_dokumen,omitempty"`
+	PlafondLimit  any    `json:"plafondlimit,omitempty"`
+
+	Location *LocationInfo `json:"location,omitempty"`
 }
 
 type DataPengurusPerusahaan struct {

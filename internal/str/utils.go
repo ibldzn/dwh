@@ -24,5 +24,6 @@ func DetectDelimiter(sample []byte) rune {
 	if bestCount <= 0 {
 		return ','
 	}
+
 	return best
 }
