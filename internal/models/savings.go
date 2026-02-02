@@ -16,16 +16,16 @@ type Saving struct {
 	ProdukJenisTabungan            string  `json:"produk_jenistabungan"`
 	Currency                       string  `json:"currency"`
 	SukuBungaKredit                string  `json:"sukubungakredit"`
-	PembayaranBungaKreditTglTetap  int64   `json:"pembayaranbunga_kredit_tgltetap"`
+	PembayaranBungaKreditTglTetap  float64 `json:"pembayaranbunga_kredit_tgltetap"`
 	SukuBungaDebit                 any     `json:"sukubungadebit"`
-	PembayaranBungaDebitTglTetap   int64   `json:"pembayaranbunga_debit_tgltetap"`
+	PembayaranBungaDebitTglTetap   float64 `json:"pembayaranbunga_debit_tgltetap"`
 	Overdraft                      string  `json:"overdraft"`
 	NoRekTujuanBunga               any     `json:"norek_tujuan_bunga"`
 	NamaNasabah                    string  `json:"namanasabah"`
 	JenisTabungan                  string  `json:"jenistabungan"`
 	CetakBilyet                    string  `json:"cetakbilyet"`
 	CetakBukuTabungan              string  `json:"cetakbukutabungan"`
-	ProdukSukuBungaDebit           int64   `json:"produk_sukubungadebit"`
+	ProdukSukuBungaDebit           float64 `json:"produk_sukubungadebit"`
 	ProdukSukuBungaKredit          float64 `json:"produk_sukubungakredit"`
 	Referral                       any     `json:"referral"`
 	ProdukTransaksiAutoDebit       string  `json:"produk_transaksiautodebit"`
@@ -33,13 +33,13 @@ type Saving struct {
 	SumberDana                     any     `json:"sumberdana"`
 	JointAccount                   string  `json:"jointaccount"`
 	AlasanBlokir                   any     `json:"alasanblokir"`
-	NilaiBukaBlokir                int64   `json:"nilaibukablokir"`
+	NilaiBukaBlokir                float64 `json:"nilaibukablokir"`
 	TglBlokir                      any     `json:"tglblokir"`
 	TglAkhirBlokir                 any     `json:"tglakhirblokir"`
 	KeteranganBlokir               any     `json:"keteranganblokir"`
 	TglBukaBlokir                  any     `json:"tglbukablokir"`
 	AlasanBukaBlokir               any     `json:"alasanbukablokir"`
-	SaldoBlokir                    int64   `json:"saldoblokir"`
+	SaldoBlokir                    float64 `json:"saldoblokir"`
 	TglBukaRekening                DateTZ  `json:"tglbukarekening"`
 	TglClosed                      any     `json:"tglclosed"`
 	BlokirDebet                    any     `json:"blokirdebet"`
@@ -62,8 +62,8 @@ type Saving struct {
 	MutasiDebit                    string  `json:"mutasidebit"`
 	MutasiKredit                   string  `json:"mutasikredit"`
 	SaldoAkru                      float64 `json:"saldoakru"`
-	SaldoAkruDebit                 int64   `json:"saldoakrudebit"`
-	PlafondLimit                   int64   `json:"plafondlimit"`
+	SaldoAkruDebit                 float64 `json:"saldoakrudebit"`
+	PlafondLimit                   float64 `json:"plafondlimit"`
 	Dpd                            int64   `json:"dpd"`
 	KolekBi                        int64   `json:"kolekbi"`
 	Tunggakan                      any     `json:"tunggakan"`
@@ -79,13 +79,13 @@ type Saving struct {
 	SidSifatKredit2                any     `json:"sid_sifatkredit2"`
 	SidSektorEkonomi               any     `json:"sid_sektorekonomi"`
 	SidSektorEkonomi2              any     `json:"sid_sektorekonomi2"`
-	Terpakai                       int64   `json:"terpakai"`
+	Terpakai                       float64 `json:"terpakai"`
 	PlafondBlokir                  string  `json:"plafond_blokir"`
 	TotalSoAktif                   int64   `json:"total_so_aktif"`
-	TotalUsedPlafondOd1            int64   `json:"totalusedplafondod1"`
-	TotalAvailablePlafondOd1       int64   `json:"totalavailableplafondod1"`
-	TotalAvailablePlafond          int64   `json:"totalavailableplafond"`
-	LimitFasilitas                 int64   `json:"limitfasilitas"`
+	TotalUsedPlafondOd1            float64 `json:"totalusedplafondod1"`
+	TotalAvailablePlafondOd1       float64 `json:"totalavailableplafondod1"`
+	TotalAvailablePlafond          float64 `json:"totalavailableplafond"`
+	LimitFasilitas                 float64 `json:"limitfasilitas"`
 	PeriodeAwalFasilitas           any     `json:"periodeawal_fasilitas"`
 	PeriodeAkhirFasilitas          any     `json:"periodeakhir_fasilitas"`
 	PeriodeBatasFasilitasPencairan any     `json:"periode_batas_fasilitas_pencairan"`
@@ -96,8 +96,8 @@ type Saving struct {
 	GroupID                        any     `json:"groupid"`
 	KodeMarketing                  any     `json:"kode_marketing"`
 	NotesMarketing                 any     `json:"notes_marketing"`
-	TotalAvailablePlafondOd        int64   `json:"totalavailableplafondod"`
-	TotalUsedPlafondOd             int64   `json:"totalusedplafondod"`
+	TotalAvailablePlafondOd        float64 `json:"totalavailableplafondod"`
+	TotalUsedPlafondOd             float64 `json:"totalusedplafondod"`
 	SaldoAwalKredit                string  `json:"saldoawalkredit"`
 	SaldoAwalDebit                 string  `json:"saldoawaldebit"`
 	SaldoAkhirKredit               string  `json:"saldoakhirkredit"`
@@ -105,9 +105,9 @@ type Saving struct {
 	SaldoAkhirDebit                string  `json:"saldoakhirdebit"`
 	SaldoAkhirDebitEquivalent      string  `json:"saldoakhirdebit_equivalent"`
 	SaldoAkruBungaKredit           float64 `json:"saldoakrubungakredit"`
-	SaldoAkruBungaDebit            int64   `json:"saldoakrubungadebit"`
+	SaldoAkruBungaDebit            float64 `json:"saldoakrubungadebit"`
 	DataStandingOrder              any     `json:"datastandingorder"`
-	AttKtp                         bool    `json:"attKtp"`
-	AttTtd                         bool    `json:"attTtd"`
+	AttKtp                         any     `json:"attKtp"`
+	AttTtd                         any     `json:"attTtd"`
 	StatusBlokir                   string  `json:"statusblokir"`
 }
