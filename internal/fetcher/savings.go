@@ -46,6 +46,56 @@ func (f *Fetcher) FetchSavingsDetail(ctx context.Context, accountNo string) (mod
 	return data.Data.Saving, nil
 }
 
+func (f *Fetcher) FetchSavingsAccounts(ctx context.Context) ([]string, error) {
+	// /tabungan/inquiry/rekening/cari?cabang=ALL&datamutasi=false&pagenumber=0&pagesize=9999999999999999999&rowcount=0
+	req, err := f.client.NewRequestWithSessionID(ctx, "GET", "/tabungan/inquiry/rekening/cari", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("cabang", "ALL")
+	q.Set("datamutasi", "false")
+	q.Set("pagenumber", "0")
+	q.Set("pagesize", "9999999999999")
+	q.Set("rowcount", "0")
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("fetch savings accounts failed: %s", resp.Status)
+	}
+
+	var data struct {
+		Data struct {
+			Result []struct {
+				ID string `json:"id"`
+			} `json:"result"`
+		} `json:"data"`
+		Status string `json:"status"`
+	}
+
+	if err := fincloud.DecodeJSON(resp, &data); err != nil {
+		return nil, err
+	}
+
+	if data.Status != "ok" {
+		return nil, fmt.Errorf("fetch savings accounts failed: status %s", data.Status)
+	}
+
+	accounts := make([]string, 0, len(data.Data.Result))
+	for _, acc := range data.Data.Result {
+		accounts = append(accounts, acc.ID)
+	}
+
+	return accounts, nil
+}
+
 func (f *Fetcher) FetchSavingsCashDepositTransactionReport(ctx context.Context, branch, startDate, endDate string) (string, error) {
 	return f.client.DownloadReport(
 		ctx,

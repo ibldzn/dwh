@@ -68,7 +68,7 @@ func (f *Fetcher) FetchLoanAccounts(ctx context.Context, status string) ([]strin
 	q.Set("cabang", "ALL")
 	q.Set("jenispinjaman", "")
 	q.Set("pagenumber", "0")
-	q.Set("pagesize", "100000000")
+	q.Set("pagesize", "9999999999999")
 	q.Set("rowcount", "0")
 	q.Set("status", status)
 	req.URL.RawQuery = q.Encode()
