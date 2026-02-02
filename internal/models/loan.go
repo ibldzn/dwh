@@ -138,10 +138,18 @@ type Loan struct {
 	Tabungan                      []Tabungan                `json:"tabungan"`
 	JadwalAngsuran                []Jadwalangsuran          `json:"jadwalangsuran"`
 	HistoryBayar                  []Historybayar            `json:"historybayar"`
-	TempatPenyimpanan             bool                      `json:"tempatpenyimpanan"`
+	TempatPenyimpanan             any                       `json:"tempatpenyimpanan"`
 	RekeningBungaBerjenjang       []RekeningBungaberjenjang `json:"rekening_bungaberjenjang"`
-	Channeling                    bool                      `json:"channeling"`
+	Channeling                    any                       `json:"channeling"`
 	AsuransiData                  string                    `json:"asuransidata"`
+	DataJaminanLainnya            []DataJaminanLainnya      `json:"datajaminanlainnya"`
+}
+
+type DataJaminanLainnya struct {
+	NamaJaminan      string  `json:"nm_jaminanlainnya"`
+	NomorJaminan     string  `json:"nomor_jaminan"`
+	NilaiJaminanReal float64 `json:"lainnya_nilaijaminanreal"`
+	NilaiJaminan     float64 `json:"lainnya_nilaijaminan"`
 }
 
 type Biayapencairan struct {

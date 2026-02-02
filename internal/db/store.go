@@ -18,7 +18,7 @@ type Store struct {
 }
 
 const (
-	deadlockRetryMax   = 4
+	deadlockRetryMax    = 4
 	deadlockBaseBackoff = 100 * time.Millisecond
 )
 
@@ -1024,8 +1024,8 @@ func (s *Store) upsertLoanOnce(ctx context.Context, loan models.Loan) error {
 		anyToString(loan.GroupID),
 		loan.JenisJaminanTanah,
 		loan.JenisJaminanLainnya,
-		loan.TempatPenyimpanan,
-		loan.Channeling,
+		anyToString(loan.TempatPenyimpanan),
+		anyToString(loan.Channeling),
 		loan.AsuransiData,
 		time.Now().UTC(),
 	}

@@ -428,8 +428,8 @@ CREATE TABLE IF NOT EXISTS loans (
     groupid TEXT,
     jenisjaminantanah TEXT,
     jenisjaminanlainnya TEXT,
-    tempatpenyimpanan TINYINT(1),
-    channeling TINYINT(1),
+    tempatpenyimpanan TEXT,
+    channeling TEXT,
     asuransidata TEXT,
     fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
