@@ -591,8 +591,8 @@ func (s *Store) UpsertSaving(ctx context.Context, saving models.Saving) error {
 		saving.SaldoAkruBungaKredit,
 		saving.SaldoAkruBungaDebit,
 		anyToString(saving.DataStandingOrder),
-		saving.AttKtp,
-		saving.AttTtd,
+		anyToString(saving.AttKtp),
+		anyToString(saving.AttTtd),
 		saving.StatusBlokir,
 		time.Now().UTC(),
 	}
@@ -1465,6 +1465,12 @@ func anyToString(value any) any {
 			return nil
 		}
 		return v
+	case map[string]interface{}:
+		data, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Sprint(v)
+		}
+		return string(data)
 	default:
 		data, err := json.Marshal(v)
 		if err != nil {

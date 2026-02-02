@@ -155,6 +155,52 @@ func main() {
 		wg.Wait()
 		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	}
+
+	if envBool("FETCH_SAVINGS_ALL") {
+		savingAccounts, err := fetch.FetchSavingsAccounts(ctx)
+		if err != nil {
+			errorExit("failed to fetch savings accounts", err)
+		}
+
+		bar := progressbar.Default(int64(len(savingAccounts)), "fetching savings")
+		fetchFailed := atomic.Int32{}
+		upsertFailed := atomic.Int32{}
+
+		concurrency := max(envInt("INGEST_CONCURRENCY", 10), 1)
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+	savingLoop:
+		for _, savingID := range savingAccounts {
+			select {
+			case <-ctx.Done():
+				break savingLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					saving, err := fetch.FetchSavingsDetail(ctx, savingID)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch saving %s: %v\n", savingID, err)
+						return
+					}
+
+					if err := store.UpsertSaving(ctx, saving); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert saving %s: %v\n", savingID, err)
+						return
+					}
+				})
+			}
+		}
+
+		wg.Wait()
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
+	}
 }
 
 func requireEnv(key string) string {

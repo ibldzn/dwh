@@ -277,8 +277,8 @@ CREATE TABLE IF NOT EXISTS savings (
     saldoakrubungakredit DOUBLE,
     saldoakrubungadebit BIGINT,
     datastandingorder TEXT,
-    attKtp TINYINT(1),
-    attTtd TINYINT(1),
+    attKtp TEXT,
+    attTtd TEXT,
     statusblokir TEXT,
     fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
