@@ -474,9 +474,38 @@ func (s *Store) UpsertSaving(ctx context.Context, saving models.Saving) error {
 		return fmt.Errorf("saving no_rekening is empty")
 	}
 
+	var lastErr error
+	for attempt := 0; attempt <= deadlockRetryMax; attempt++ {
+		if attempt > 0 {
+			if err := sleepWithBackoff(ctx, attempt); err != nil {
+				return err
+			}
+		}
+
+		if err := s.upsertSavingOnce(ctx, saving); err != nil {
+			lastErr = err
+			if isRetryableMySQLError(err) {
+				continue
+			}
+			return err
+		}
+		return nil
+	}
+	return lastErr
+}
+
+func (s *Store) upsertSavingOnce(ctx context.Context, saving models.Saving) error {
 	createDate, createTZType, createTZ := dateParts(saving.CreateDate)
 	openDate, openTZType, openTZ := dateParts(saving.TglBukaRekening)
 	cifDate, cifTZType, cifTZ := dateParts(saving.TglBukaCif)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	args := []any{
 		saving.NoRekening,
@@ -590,7 +619,6 @@ func (s *Store) UpsertSaving(ctx context.Context, saving models.Saving) error {
 		saving.SaldoAkhirDebitEquivalent,
 		saving.SaldoAkruBungaKredit,
 		saving.SaldoAkruBungaDebit,
-		anyToString(saving.DataStandingOrder),
 		anyToString(saving.AttKtp),
 		anyToString(saving.AttTtd),
 		saving.StatusBlokir,
@@ -710,7 +738,6 @@ func (s *Store) UpsertSaving(ctx context.Context, saving models.Saving) error {
 			saldoakhirdebit_equivalent,
 			saldoakrubungakredit,
 			saldoakrubungadebit,
-			datastandingorder,
 			attKtp,
 			attTtd,
 			statusblokir,
@@ -827,15 +854,60 @@ func (s *Store) UpsertSaving(ctx context.Context, saving models.Saving) error {
 			saldoakhirdebit_equivalent = VALUES(saldoakhirdebit_equivalent),
 			saldoakrubungakredit = VALUES(saldoakrubungakredit),
 			saldoakrubungadebit = VALUES(saldoakrubungadebit),
-			datastandingorder = VALUES(datastandingorder),
 			attKtp = VALUES(attKtp),
 			attTtd = VALUES(attTtd),
 			statusblokir = VALUES(statusblokir),
 			fetched_at = VALUES(fetched_at)
 	`, placeholders(len(args)))
 
-	_, err := s.db.ExecContext(ctx, query, args...)
-	return err
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM savings_standing_order WHERE saving_norekening = ?`, saving.NoRekening); err != nil {
+		return err
+	}
+	for _, order := range saving.DataStandingOrder {
+		args := []any{
+			saving.NoRekening,
+			order.TglTransaksi,
+			order.NoRekTujuan,
+			order.NamaNasabah,
+			order.Nominal,
+			order.Frekuensi,
+			order.XFrekuensi,
+			order.TglAwal,
+			order.TglAkhir,
+			order.TglBerikutnya,
+			order.Status,
+			order.Keterangan,
+			order.Fee,
+		}
+
+		query := fmt.Sprintf(`
+			INSERT INTO savings_standing_order (
+				saving_norekening,
+				tgltransaksi,
+				norektujuan,
+				namanasabah,
+				nominal,
+				frekuensi,
+				xfrekuensi,
+				tglawal,
+				tglakhir,
+				tglberikutnya,
+				status,
+				keterangan,
+				fee
+			) VALUES (%s)
+		`, placeholders(len(args)))
+
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) UpsertLoan(ctx context.Context, loan models.Loan) error {
@@ -1448,6 +1520,33 @@ func (s *Store) upsertLoanOnce(ctx context.Context, loan models.Loan) error {
 			recType,
 		)
 		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM loan_data_jaminan_lainnya WHERE loan_id = ?`, loan.ID); err != nil {
+		return err
+	}
+	for _, jaminan := range loan.DataJaminanLainnya {
+		args := []any{
+			loan.ID,
+			jaminan.NamaJaminan,
+			jaminan.NomorJaminan,
+			jaminan.NilaiJaminanReal,
+			jaminan.NilaiJaminan,
+		}
+
+		query := fmt.Sprintf(`
+			INSERT INTO loan_data_jaminan_lainnya (
+				loan_id,
+				nm_jaminanlainnya,
+				nomor_jaminan,
+				lainnya_nilaijaminanreal,
+				lainnya_nilaijaminan
+			) VALUES (%s)
+		`, placeholders(len(args)))
+
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}
