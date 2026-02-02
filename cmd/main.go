@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
+	"github.com/ibldzn/dwh-v2/internal/db"
 	"github.com/ibldzn/dwh-v2/internal/fetcher"
 	"github.com/ibldzn/dwh-v2/internal/fincloud"
 	"github.com/joho/godotenv"
+	"github.com/schollz/progressbar/v3"
 )
 
 func main() {
@@ -43,39 +47,114 @@ func main() {
 		errorExit("failed to create fetcher", err)
 	}
 
-	cifs, err := fetch.FetchCIFList(ctx)
+	dsn := os.Getenv("MYSQL_DSN")
+
+	storeDB, err := db.Open(dsn)
 	if err != nil {
-		errorExit("failed to fetch CIF detail", err)
+		errorExit("failed to open database: %v", err)
+	}
+	defer storeDB.Close()
+
+	if err := db.Migrate(ctx, storeDB); err != nil {
+		errorExit("failed to migrate database: %v", err)
 	}
 
-	fmt.Printf("fetched %d CIFs\n", len(cifs))
+	store, err := db.NewStore(storeDB)
+	if err != nil {
+		errorExit("failed to create db store: %v", err)
+	}
 
-	sem := make(chan struct{}, 10)
-	var wg sync.WaitGroup
-
-cifLoop:
-	for _, cifNo := range cifs {
-		select {
-		case <-ctx.Done():
-			break cifLoop
-		case sem <- struct{}{}:
-			wg.Go(func() {
-				defer func() { <-sem }()
-
-				cif, err := fetch.FetchCIFDetail(ctx, cifNo)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "failed to fetch CIF %s: %v\n", cifNo, err)
-					return
-				}
-
-				fmt.Printf("CIF %s: %+v\n", cifNo, cif.NamaNasabah)
-			})
+	if envBool("FETCH_CIF_ALL") {
+		cifs, err := fetch.FetchCIFList(ctx)
+		if err != nil {
+			errorExit("failed to fetch CIF list", err)
 		}
+
+		bar := progressbar.Default(int64(len(cifs)), "fetching CIFs")
+		fetchFailed := atomic.Int32{}
+		upsertFailed := atomic.Int32{}
+
+		concurrency := max(envInt("INGEST_CONCURRENCY", 10), 1)
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+	cifLoop:
+		for _, cifNo := range cifs {
+			select {
+			case <-ctx.Done():
+				break cifLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					cif, err := fetch.FetchCIFDetail(ctx, cifNo)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch CIF %s: %v\n", cifNo, err)
+						return
+					}
+
+					if err := store.UpsertCIF(ctx, cif); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert CIF %s: %v\n", cifNo, err)
+						return
+					}
+				})
+			}
+		}
+
+		wg.Wait()
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	}
 
-	wg.Wait()
+	if envBool("FETCH_LOAN_ALL") {
+		loanAccounts, err := fetch.FetchLoanAccounts(ctx, "Aktif")
+		if err != nil {
+			errorExit("failed to fetch loan accounts", err)
+		}
 
-	fmt.Println("done")
+		bar := progressbar.Default(int64(len(loanAccounts)), "fetching loans")
+		fetchFailed := atomic.Int32{}
+		upsertFailed := atomic.Int32{}
+
+		concurrency := max(envInt("INGEST_CONCURRENCY", 10), 1)
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+	loanLoop:
+		for _, loanID := range loanAccounts {
+			select {
+			case <-ctx.Done():
+				break loanLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					loan, err := fetch.FetchLoansDetail(ctx, loanID)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch loan %s: %v\n", loanID, err)
+						return
+					}
+
+					if err := store.UpsertLoan(ctx, loan); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert loan %s: %v\n", loanID, err)
+						return
+					}
+				})
+			}
+		}
+
+		wg.Wait()
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
+	}
 }
 
 func requireEnv(key string) string {
@@ -89,4 +168,28 @@ func requireEnv(key string) string {
 func errorExit(msg string, args ...any) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 	os.Exit(1)
+}
+
+func envBool(key string) bool {
+	val := os.Getenv(key)
+	if val == "" {
+		return false
+	}
+	parsed, err := strconv.ParseBool(val)
+	if err != nil {
+		return false
+	}
+	return parsed
+}
+
+func envInt(key string, fallback int) int {
+	val := os.Getenv(key)
+	if val == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(val)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
