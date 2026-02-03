@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -41,11 +42,10 @@ func (f *Fetcher) FetchEODFiles(ctx context.Context, date string) (map[string]st
 	// format date back to string in YYYYMMDD format
 	date = asOf.Format("20060102")
 
-	req, err := f.client.NewRequest(ctx, http.MethodGet, "/system/downloaderlaporan/pembuatan/loadorDownload", nil)
+	req, err := f.client.NewRequestWithSessionID(ctx, http.MethodGet, "/system/downloaderlaporan/pembuatan/loadorDownload", nil)
 	if err != nil {
 		return nil, err
 	}
-	fincloud.AttachSession(req, sessionId)
 
 	q := req.URL.Query()
 	q.Set("file", date)
@@ -76,11 +76,10 @@ func (f *Fetcher) FetchEODFiles(ctx context.Context, date string) (map[string]st
 	}
 
 	downloadFile := func(fileName string) (string, error) {
-		req, err := f.client.NewRequest(ctx, http.MethodGet, "/system/downloaderlaporan/download.php", nil)
+		req, err := f.client.NewRequestWithSessionID(ctx, http.MethodGet, "/system/downloaderlaporan/download.php", nil)
 		if err != nil {
 			return "", err
 		}
-		fincloud.AttachSession(req, sessionId)
 
 		q := req.URL.Query()
 		q.Set("file", fileName)
@@ -98,13 +97,15 @@ func (f *Fetcher) FetchEODFiles(ctx context.Context, date string) (map[string]st
 			return "", err
 		}
 
+		content = bytes.TrimPrefix(content, []byte("\uFEFF")) // remove BOM if exists
+
 		return string(content), nil
 	}
 
 	files := make(map[string]string)
 
 	hasMergedOutstandings := false
-	detailOutstandings := make([]string, 0)
+	detailOutstandings := make([]string, 0, 1*1024*1024) // preallocate 1MB
 	detailOutstandingHeader := ""
 
 	for _, file := range intermediate.Data.Result.List {
@@ -114,7 +115,7 @@ func (f *Fetcher) FetchEODFiles(ctx context.Context, date string) (map[string]st
 
 		if file.File == "DetailOutstandingRekeningPinjaman.csv" {
 			hasMergedOutstandings = true
-		} else if strings.HasPrefix(file.File, "DetailOutstandingRekeningPinjaman_") {
+		} else if !hasMergedOutstandings && strings.HasPrefix(file.File, "DetailOutstandingRekeningPinjaman_") {
 			content, err := downloadFile(file.File)
 			if err != nil {
 				return nil, err
