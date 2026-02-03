@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/ibldzn/dwh-v2/internal/db"
 	"github.com/ibldzn/dwh-v2/internal/fetcher"
@@ -47,9 +49,7 @@ func main() {
 		errorExit("failed to create fetcher", err)
 	}
 
-	dsn := os.Getenv("MYSQL_DSN")
-
-	storeDB, err := db.Open(dsn)
+	storeDB, err := db.Open(requireEnv("MYSQL_DSN"))
 	if err != nil {
 		errorExit("failed to open database: %v", err)
 	}
@@ -62,6 +62,76 @@ func main() {
 	store, err := db.NewStore(storeDB)
 	if err != nil {
 		errorExit("failed to create db store: %v", err)
+	}
+
+	if envBool("INGEST_EOD") {
+		startDate := time.Date(2025, 10, 13, 0, 0, 0, 0, time.UTC)
+		today := time.Now().UTC().AddDate(0, 0, -1)
+
+		type eodData struct {
+			file string
+			date string
+			data string
+		}
+
+		bar := progressbar.Default(int64(today.Sub(startDate).Hours()/24)+1, "fetching and ingesting EOD files")
+		sem := make(chan struct{}, max(envInt("INGEST_CONCURRENCY", 5), 1))
+		eodCh := make(chan eodData)
+		eodDone := make(chan struct{})
+		upsertFailed := atomic.Int32{}
+		fetchFailed := atomic.Int32{}
+
+		go func() {
+			defer close(eodDone)
+			for eod := range eodCh {
+				_, err := store.UpsertEODCSV(ctx, eod.file, eod.date, eod.data)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "failed to ingest EOD %s: %v\n", eod.file, err)
+					upsertFailed.Add(1)
+					continue
+				}
+			}
+		}()
+
+		var wg sync.WaitGroup
+
+		for d := startDate; !d.After(today); d = d.AddDate(0, 0, 1) {
+			sem <- struct{}{}
+			wg.Go(func() {
+				defer func() {
+					<-sem
+					_ = bar.Add(1)
+				}()
+
+				dateStr := d.Format("2006-01-02")
+				eodFiles, err := fetch.FetchEODFiles(ctx, dateStr)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "failed to fetch EOD files for %s: %v\n", dateStr, err)
+					fetchFailed.Add(1)
+					return
+				}
+
+				files := make([]string, 0, len(eodFiles))
+				for file := range eodFiles {
+					files = append(files, file)
+				}
+				sort.Strings(files)
+
+				for _, file := range files {
+					eodCh <- eodData{
+						file: file,
+						date: dateStr,
+						data: eodFiles[file],
+					}
+				}
+			})
+		}
+
+		wg.Wait()
+		close(eodCh)
+		<-eodDone
+
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	}
 
 	if envBool("FETCH_CIF_ALL") {
