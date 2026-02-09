@@ -64,9 +64,10 @@ func main() {
 		errorExit("failed to create db store: %v", err)
 	}
 
+	initialDate := time.Date(2025, 10, 13, 0, 0, 0, 0, time.UTC)
+
 	if envBool("INGEST_EOD") {
-		startDate := time.Date(2025, 10, 13, 0, 0, 0, 0, time.UTC)
-		today := time.Now().UTC().AddDate(0, 0, -1)
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
 
 		type eodData struct {
 			file string
@@ -74,7 +75,7 @@ func main() {
 			data string
 		}
 
-		bar := progressbar.Default(int64(today.Sub(startDate).Hours()/24)+1, "fetching and ingesting EOD files")
+		bar := progressbar.Default(int64(yesterday.Sub(initialDate).Hours()/24)+1, "fetching and ingesting EOD files")
 		sem := make(chan struct{}, max(envInt("INGEST_CONCURRENCY", 5), 1))
 		eodCh := make(chan eodData)
 		eodDone := make(chan struct{})
@@ -95,7 +96,7 @@ func main() {
 
 		var wg sync.WaitGroup
 
-		for d := startDate; !d.After(today); d = d.AddDate(0, 0, 1) {
+		for d := initialDate; !d.After(yesterday); d = d.AddDate(0, 0, 1) {
 			sem <- struct{}{}
 			wg.Go(func() {
 				defer func() {
@@ -131,6 +132,80 @@ func main() {
 		close(eodCh)
 		<-eodDone
 
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
+	}
+
+	if envBool("FETCH_JOURNAL_TRX") {
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
+		bar := progressbar.Default(int64(yesterday.Sub(initialDate).Hours()/24)+1, "fetching and ingesting journal transaction reports")
+
+		for d := initialDate; !d.After(yesterday); d = d.AddDate(0, 0, 1) {
+			dateStr := d.Format("2006-01-02")
+			journal, err := fetch.FetchJournalTransactionReport(ctx, "", dateStr, dateStr)
+			if err != nil {
+				errorExit("failed to fetch journal transaction report for %s: %v", dateStr, err)
+			}
+
+			_, err = store.UpsertCSV(ctx, "journal_transactions", "Journal Transaction Report csv", dateStr, journal)
+			if err != nil {
+				errorExit("failed to ingest journal transaction report for %s: %v", dateStr, err)
+			}
+
+			_ = bar.Add(1)
+		}
+	}
+
+	if envBool("FETCH_COA_MOVEMENTS") {
+		accounts, err := client.FetchAccountCodes(ctx)
+		if err != nil {
+			errorExit("failed to fetch account codes", err)
+		}
+
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
+		bar := progressbar.Default(int64(len(accounts)*int(yesterday.Sub(initialDate).Hours()/24)+1), "fetching and ingesting COA movements")
+
+		upsertFailed := atomic.Int32{}
+		fetchFailed := atomic.Int32{}
+
+		concurrency := max(envInt("INGEST_CONCURRENCY", 10), 1)
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+	coaLoop:
+		for d := initialDate; !d.After(yesterday); d = d.AddDate(0, 0, 1) {
+			dateStr := d.Format("2006-01-02")
+			for accCode := range accounts {
+				select {
+				case <-ctx.Done():
+					break coaLoop
+				case sem <- struct{}{}:
+					wg.Go(func() {
+						defer func() {
+							<-sem
+							_ = bar.Add(1)
+						}()
+
+						coaData, err := fetch.FetchCoAMovementReport(ctx, accCode, "", dateStr, dateStr)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch COA movements for %s: %v\n", accCode, err)
+							return
+						}
+
+						// fmt.Printf("fetched COA movements for %s on %s (%d bytes)\n", accCode, dateStr, len(coaData))
+						// fmt.Println(coaData)
+
+						if _, err := store.UpsertCSV(ctx, "coa_movements", fmt.Sprintf("COA Movement Report csv - %s", accCode), dateStr, coaData); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert COA movements for %s: %v\n", accCode, err)
+							return
+						}
+					})
+				}
+			}
+		}
+
+		wg.Wait()
 		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	}
 

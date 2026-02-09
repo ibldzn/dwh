@@ -10,24 +10,39 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/ibldzn/dwh-v2/internal/str"
 )
 
 // UpsertEODCSV ingests a CSV content into an eod_* table inferred from fileName.
 // It tolerates changing headers by adding new columns on the fly.
 func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content string) (int, error) {
+	if strings.TrimSpace(fileName) == "" {
+		return 0, errors.New("file name is required")
+	}
+	table := eodTableName(fileName)
+	return s.UpsertCSV(ctx, table, fileName, eodDate, content)
+}
+
+// UpsertCSV ingests a CSV content into the provided table name.
+// It tolerates changing headers by adding new columns on the fly.
+// sourceFile and asOfDate are optional metadata; pass empty strings to skip.
+func (s *Store) UpsertCSV(ctx context.Context, tableName, sourceFile, asOfDate, content string) (int, error) {
 	if s == nil || s.db == nil {
 		return 0, errors.New("db store is nil")
 	}
 	if strings.TrimSpace(content) == "" {
 		return 0, nil
 	}
-
-	table := eodTableName(fileName)
+	if strings.TrimSpace(tableName) == "" {
+		return 0, errors.New("table name is required")
+	}
 
 	records, headers, err := parseCSV(content)
 	if err != nil {
@@ -42,11 +57,11 @@ func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content str
 		return 0, nil
 	}
 
-	if err := ensureEODTable(ctx, s.db, table, columns); err != nil {
+	if err := ensureCSVTable(ctx, s.db, tableName, columns); err != nil {
 		return 0, err
 	}
 
-	insertCols := append([]string{"_row_hash", "source_file", "row_index", "eod_date"}, columns...)
+	insertCols := append([]string{"_row_hash", "source_file", "row_index", "as_of_date"}, columns...)
 	insertCols = append(insertCols, "ingested_at")
 	placeholders := placeholders(len(insertCols))
 	updateCols := make([]string, 0, len(insertCols))
@@ -59,7 +74,7 @@ func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content str
 
 	query := fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
-		table,
+		tableName,
 		strings.Join(insertCols, ","),
 		placeholders,
 		strings.Join(updateCols, ","),
@@ -88,9 +103,9 @@ func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content str
 			}
 		}
 
-		rowHash := hashRow(fileName, row)
+		rowHash := hashRow(sourceFile, row)
 		args := make([]any, 0, len(insertCols))
-		args = append(args, rowHash, fileName, i+1, eodDate)
+		args = append(args, rowHash, sourceFile, i+1, asOfDate)
 		for _, value := range row {
 			if value == "" {
 				args = append(args, nil)
@@ -101,7 +116,7 @@ func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content str
 		args = append(args, time.Now().UTC())
 
 		if _, err := stmt.ExecContext(ctx, args...); err != nil {
-			return count, fmt.Errorf("upsert %s row %d: %w", fileName, i+1, err)
+			return count, fmt.Errorf("upsert %s row %d: %w", sourceFile, i+1, err)
 		}
 		count++
 	}
@@ -153,6 +168,22 @@ func eodTableName(fileName string) string {
 		base = "file"
 	}
 	return "eod_" + base
+}
+
+// csvTableName builds a prefixed table name from a file name.
+func csvTableName(prefix, fileName string) string {
+	base := fileName
+	if idx := strings.LastIndex(base, "."); idx >= 0 {
+		base = base[:idx]
+	}
+	base = snakeCase(base)
+	if base == "" {
+		base = "file"
+	}
+	if prefix == "" {
+		return base
+	}
+	return prefix + "_" + base
 }
 
 func sanitizeHeaders(headers []string) []string {
@@ -211,8 +242,8 @@ func snakeCase(input string) string {
 	return out
 }
 
-func ensureEODTable(ctx context.Context, db *sql.DB, table string, columns []string) error {
-	if err := createEODTable(ctx, db, table, columns); err != nil {
+func ensureCSVTable(ctx context.Context, db *sql.DB, table string, columns []string) error {
+	if err := createCSVTable(ctx, db, table, columns); err != nil {
 		return err
 	}
 
@@ -222,7 +253,7 @@ func ensureEODTable(ctx context.Context, db *sql.DB, table string, columns []str
 	}
 
 	missing := make([]string, 0)
-	for _, col := range append([]string{"eod_date"}, columns...) {
+	for _, col := range append([]string{"as_of_date"}, columns...) {
 		if _, ok := existing[col]; !ok {
 			missing = append(missing, col)
 		}
@@ -232,20 +263,75 @@ func ensureEODTable(ctx context.Context, db *sql.DB, table string, columns []str
 	}
 
 	sort.Strings(missing)
+	lockName := schemaLockName(table)
+	if err := acquireSchemaLock(ctx, db, lockName); err != nil {
+		return err
+	}
+	defer func() {
+		_ = releaseSchemaLock(ctx, db, lockName)
+	}()
+
 	for _, col := range missing {
 		colType := "TEXT"
-		if col == "eod_date" {
+		if col == "as_of_date" {
 			colType = "DATE"
 		}
 		stmt := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, col, colType)
 		if _, err := db.ExecContext(ctx, stmt); err != nil {
+			if isDuplicateColumnError(err) {
+				continue
+			}
 			return err
 		}
 	}
 	return nil
 }
 
-func createEODTable(ctx context.Context, db *sql.DB, table string, columns []string) error {
+func isDuplicateColumnError(err error) bool {
+	var myErr *mysql.MySQLError
+	if errors.As(err, &myErr) {
+		return myErr.Number == 1060
+	}
+	return false
+}
+
+func schemaLockName(table string) string {
+	return "schema_lock:" + table
+}
+
+func acquireSchemaLock(ctx context.Context, db *sql.DB, lockName string) error {
+	timeout := schemaLockTimeoutSeconds()
+	var ok int
+	if err := db.QueryRowContext(ctx, "SELECT GET_LOCK(?, ?)", lockName, timeout).Scan(&ok); err != nil {
+		return err
+	}
+	if ok != 1 {
+		return fmt.Errorf("failed to acquire schema lock %s", lockName)
+	}
+	return nil
+}
+
+func releaseSchemaLock(ctx context.Context, db *sql.DB, lockName string) error {
+	var ok sql.NullInt64
+	if err := db.QueryRowContext(ctx, "SELECT RELEASE_LOCK(?)", lockName).Scan(&ok); err != nil {
+		return err
+	}
+	return nil
+}
+
+func schemaLockTimeoutSeconds() int {
+	val := strings.TrimSpace(os.Getenv("CSV_SCHEMA_LOCK_TIMEOUT_SECONDS"))
+	if val == "" {
+		return 60
+	}
+	parsed, err := strconv.Atoi(val)
+	if err != nil || parsed < 1 {
+		return 60
+	}
+	return parsed
+}
+
+func createCSVTable(ctx context.Context, db *sql.DB, table string, columns []string) error {
 	cols := make([]string, 0, len(columns))
 	for _, col := range columns {
 		cols = append(cols, fmt.Sprintf("%s TEXT", col))
@@ -256,7 +342,7 @@ func createEODTable(ctx context.Context, db *sql.DB, table string, columns []str
 			"_row_hash CHAR(64) PRIMARY KEY,"+
 			"source_file TEXT,"+
 			"row_index BIGINT,"+
-			"eod_date DATE,"+
+			"as_of_date DATE,"+
 			"%s,"+
 			"ingested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"+
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
