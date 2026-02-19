@@ -64,7 +64,9 @@ func main() {
 		errorExit("failed to create db store: %v", err)
 	}
 
-	initialDate := time.Date(2025, 10, 13, 0, 0, 0, 0, time.UTC)
+	jsonIngest := envBool("JSON_INGEST")
+
+	initialDate := time.Now().UTC().AddDate(0, 0, -7)
 
 	if envBool("INGEST_EOD") {
 		yesterday := time.Now().UTC().AddDate(0, 0, -1)
@@ -76,7 +78,7 @@ func main() {
 		}
 
 		bar := progressbar.Default(int64(yesterday.Sub(initialDate).Hours()/24)+1, "fetching and ingesting EOD files")
-		sem := make(chan struct{}, max(envInt("INGEST_CONCURRENCY", 5), 1))
+		sem := make(chan struct{}, max(envInt("INGEST_CONCURRENCY", 10), 1))
 		eodCh := make(chan eodData)
 		eodDone := make(chan struct{})
 		upsertFailed := atomic.Int32{}
@@ -209,6 +211,10 @@ func main() {
 		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	}
 
+	if envBool("FETCH_MASTER_DATA") {
+
+	}
+
 	if envBool("FETCH_CIF_ALL") {
 		cifs, err := fetch.FetchCIFList(ctx)
 		if err != nil {
@@ -235,17 +241,32 @@ func main() {
 						_ = bar.Add(1)
 					}()
 
-					cif, err := fetch.FetchCIFDetail(ctx, cifNo)
-					if err != nil {
-						fetchFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to fetch CIF %s: %v\n", cifNo, err)
-						return
-					}
+					if jsonIngest {
+						payload, err := fetch.FetchCIFDetailRaw(ctx, cifNo)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch CIF %s: %v\n", cifNo, err)
+							return
+						}
 
-					if err := store.UpsertCIF(ctx, cif); err != nil {
-						upsertFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to upsert CIF %s: %v\n", cifNo, err)
-						return
+						if _, err := store.UpsertJSON(ctx, "raw_cif", "/cif/inquiry/cif/cif", time.Now().UTC().Format("2006-01-02"), payload, []string{"nocif", "no_cif", "id"}); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert CIF %s: %v\n", cifNo, err)
+							return
+						}
+					} else {
+						cif, err := fetch.FetchCIFDetail(ctx, cifNo)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch CIF %s: %v\n", cifNo, err)
+							return
+						}
+
+						if err := store.UpsertCIF(ctx, cif); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert CIF %s: %v\n", cifNo, err)
+							return
+						}
 					}
 				})
 			}
@@ -281,17 +302,32 @@ func main() {
 						_ = bar.Add(1)
 					}()
 
-					loan, err := fetch.FetchLoansDetail(ctx, loanID)
-					if err != nil {
-						fetchFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to fetch loan %s: %v\n", loanID, err)
-						return
-					}
+					if jsonIngest {
+						payload, err := fetch.FetchLoanDetailRaw(ctx, loanID)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch loan %s: %v\n", loanID, err)
+							return
+						}
 
-					if err := store.UpsertLoan(ctx, loan); err != nil {
-						upsertFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to upsert loan %s: %v\n", loanID, err)
-						return
+						if _, err := store.UpsertJSON(ctx, "raw_loans", "/pinjaman/inquiry/rekening/pinjaman", time.Now().UTC().Format("2006-01-02"), payload, []string{"id", "nopk", "no_pk"}); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert loan %s: %v\n", loanID, err)
+							return
+						}
+					} else {
+						loan, err := fetch.FetchLoansDetail(ctx, loanID)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch loan %s: %v\n", loanID, err)
+							return
+						}
+
+						if err := store.UpsertLoan(ctx, loan); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert loan %s: %v\n", loanID, err)
+							return
+						}
 					}
 				})
 			}
@@ -327,16 +363,81 @@ func main() {
 						_ = bar.Add(1)
 					}()
 
-					saving, err := fetch.FetchSavingsDetail(ctx, savingID)
+					if jsonIngest {
+						payload, err := fetch.FetchSavingDetailRaw(ctx, savingID)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch saving %s: %v\n", savingID, err)
+							return
+						}
+
+						if _, err := store.UpsertJSON(ctx, "raw_savings", "/tabungan/inquiry/rekening/tabungan", time.Now().UTC().Format("2006-01-02"), payload, []string{"norekening", "no_rekening", "id"}); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert saving %s: %v\n", savingID, err)
+							return
+						}
+					} else {
+						saving, err := fetch.FetchSavingsDetail(ctx, savingID)
+						if err != nil {
+							fetchFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to fetch saving %s: %v\n", savingID, err)
+							return
+						}
+
+						if err := store.UpsertSaving(ctx, saving); err != nil {
+							upsertFailed.Add(1)
+							fmt.Fprintf(os.Stderr, "failed to upsert saving %s: %v\n", savingID, err)
+							return
+						}
+					}
+				})
+			}
+		}
+
+		wg.Wait()
+		fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
+	}
+
+	if envBool("FETCH_TIME_DEPOSIT_ALL") {
+		if !jsonIngest {
+			errorExit("JSON_INGEST must be true to ingest time deposit data")
+		}
+
+		timeDepositAccounts, err := fetch.FetchTimeDepositAccounts(ctx)
+		if err != nil {
+			errorExit("failed to fetch time deposit accounts", err)
+		}
+
+		bar := progressbar.Default(int64(len(timeDepositAccounts)), "fetching time deposits")
+		fetchFailed := atomic.Int32{}
+		upsertFailed := atomic.Int32{}
+
+		concurrency := max(envInt("INGEST_CONCURRENCY", 10), 1)
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+	timeDepositLoop:
+		for _, accountID := range timeDepositAccounts {
+			select {
+			case <-ctx.Done():
+				break timeDepositLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					payload, err := fetch.FetchTimeDepositDetailRaw(ctx, accountID)
 					if err != nil {
 						fetchFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to fetch saving %s: %v\n", savingID, err)
+						fmt.Fprintf(os.Stderr, "failed to fetch time deposit %s: %v\n", accountID, err)
 						return
 					}
 
-					if err := store.UpsertSaving(ctx, saving); err != nil {
+					if _, err := store.UpsertJSON(ctx, "raw_time_deposits", "/deposito/inquiry/rekening/deposito", time.Now().UTC().Format("2006-01-02"), payload, []string{"id", "norekening", "no_rekening"}); err != nil {
 						upsertFailed.Add(1)
-						fmt.Fprintf(os.Stderr, "failed to upsert saving %s: %v\n", savingID, err)
+						fmt.Fprintf(os.Stderr, "failed to upsert time deposit %s: %v\n", accountID, err)
 						return
 					}
 				})
