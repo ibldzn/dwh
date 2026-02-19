@@ -212,7 +212,36 @@ func main() {
 	}
 
 	if envBool("FETCH_MASTER_DATA") {
+		fmt.Printf("fetching and ingesting master data...\n")
 
+		cifsMasterData, err := fetch.FetchCIFMasterDataRaw(ctx)
+		if err != nil {
+			errorExit("failed to fetch CIF master data", err)
+		}
+
+		if _, err := store.UpsertJSON(ctx, "raw_cif_master_data", "/tabungan/inquiry/rekening//listvalues", time.Now().UTC().Format("2006-01-02"), cifsMasterData, nil); err != nil {
+			errorExit("failed to upsert CIF master data: %v", err)
+		}
+
+		timeDepositMasterData, err := fetch.FetchTimeDepositMasterDataRaw(ctx)
+		if err != nil {
+			errorExit("failed to fetch time deposit master data", err)
+		}
+
+		if _, err := store.UpsertJSON(ctx, "raw_time_deposit_master_data", "/deposito/inquiry/rekening//listvalues", time.Now().UTC().Format("2006-01-02"), timeDepositMasterData, nil); err != nil {
+			errorExit("failed to upsert time deposit master data: %v", err)
+		}
+
+		loanMasterData, err := fetch.FetchLoanMasterDataRaw(ctx)
+		if err != nil {
+			errorExit("failed to fetch loan master data", err)
+		}
+
+		if _, err := store.UpsertJSON(ctx, "raw_loan_master_data", "/pinjaman/inquiry/rekening//listvalues", time.Now().UTC().Format("2006-01-02"), loanMasterData, nil); err != nil {
+			errorExit("failed to upsert loan master data: %v", err)
+		}
+
+		fmt.Printf("done\n")
 	}
 
 	if envBool("FETCH_CIF_ALL") {

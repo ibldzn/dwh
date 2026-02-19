@@ -78,3 +78,15 @@ func (f *Fetcher) FetchTimeDepositDetailRaw(ctx context.Context, account string)
 	q.Set("id", account)
 	return f.FetchJSONResult(ctx, http.MethodGet, "/deposito/inquiry/rekening/deposito", q)
 }
+
+func (f *Fetcher) FetchCIFMasterDataRaw(ctx context.Context) (any, error) {
+	return f.FetchJSONResult(ctx, http.MethodGet, "/tabungan/inquiry/rekening//listvalues", nil)
+}
+
+func (f *Fetcher) FetchTimeDepositMasterDataRaw(ctx context.Context) (any, error) {
+	return f.FetchJSONResult(ctx, http.MethodGet, "/deposito/inquiry/rekening//listvalues", nil)
+}
+
+func (f *Fetcher) FetchLoanMasterDataRaw(ctx context.Context) (any, error) {
+	return f.FetchJSONResult(ctx, http.MethodGet, "/pinjaman/inquiry/rekening//listvalues", nil)
+}
