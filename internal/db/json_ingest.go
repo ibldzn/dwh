@@ -48,7 +48,7 @@ type jsonChildData struct {
 	hasOverflow      bool
 }
 
-const concurrentDDLRetryExtra = 6
+const concurrentDDLRetryExtra = 12
 
 // UpsertJSON ingests a raw JSON payload into a dynamically evolving table schema.
 // payload can be an object or an array of objects.
@@ -89,7 +89,9 @@ func (s *Store) UpsertJSON(ctx context.Context, tableName, source, asOfDate stri
 		}
 
 		parentColumns := sortedKeys(flat)
-		parentExisting, err := ensureJSONTable(ctx, s.db, tableName, parentColumns)
+		maxAttempts := deadlockRetryMax + concurrentDDLRetryExtra
+
+		parentExisting, err := ensureJSONTableWithRetry(ctx, s.db, tableName, parentColumns, maxAttempts)
 		if err != nil {
 			return count, err
 		}
@@ -102,7 +104,7 @@ func (s *Store) UpsertJSON(ctx context.Context, tableName, source, asOfDate stri
 
 		children := buildChildData(tableName, arrays)
 		for i := range children {
-			childExisting, err := ensureJSONChildTable(ctx, s.db, children[i].table, children[i].columns)
+			childExisting, err := ensureJSONChildTableWithRetry(ctx, s.db, children[i].table, children[i].columns, maxAttempts)
 			if err != nil {
 				return count, err
 			}
@@ -111,7 +113,6 @@ func (s *Store) UpsertJSON(ctx context.Context, tableName, source, asOfDate stri
 			children[i].hasOverflow = hasColumn(childExisting, "_overflow_json")
 		}
 
-		maxAttempts := deadlockRetryMax + concurrentDDLRetryExtra
 		var lastErr error
 		for attempt := 0; attempt <= maxAttempts; attempt++ {
 			if attempt > 0 {
@@ -158,6 +159,74 @@ func (s *Store) UpsertJSON(ctx context.Context, tableName, source, asOfDate stri
 	}
 
 	return count, nil
+}
+
+func ensureJSONTableWithRetry(
+	ctx context.Context,
+	db *sql.DB,
+	table string,
+	columns []string,
+	maxAttempts int,
+) (map[string]struct{}, error) {
+	var lastErr error
+	for attempt := 0; attempt <= maxAttempts; attempt++ {
+		if attempt > 0 {
+			if err := sleepWithBackoff(ctx, attempt); err != nil {
+				return nil, err
+			}
+		}
+
+		existing, err := ensureJSONTable(ctx, db, table, columns)
+		if err == nil {
+			return existing, nil
+		}
+		if !isConcurrentDDLError(err) && !isSchemaLockTimeoutError(err) {
+			return nil, err
+		}
+
+		lastErr = err
+		if isConcurrentDDLError(err) {
+			if err := waitForSingleSchemaUnlock(ctx, db, table); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, lastErr
+}
+
+func ensureJSONChildTableWithRetry(
+	ctx context.Context,
+	db *sql.DB,
+	table string,
+	columns []string,
+	maxAttempts int,
+) (map[string]struct{}, error) {
+	var lastErr error
+	for attempt := 0; attempt <= maxAttempts; attempt++ {
+		if attempt > 0 {
+			if err := sleepWithBackoff(ctx, attempt); err != nil {
+				return nil, err
+			}
+		}
+
+		existing, err := ensureJSONChildTable(ctx, db, table, columns)
+		if err == nil {
+			return existing, nil
+		}
+		if !isConcurrentDDLError(err) && !isSchemaLockTimeoutError(err) {
+			return nil, err
+		}
+
+		lastErr = err
+		if isConcurrentDDLError(err) {
+			if err := waitForSingleSchemaUnlock(ctx, db, table); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, lastErr
 }
 
 func (s *Store) upsertJSONOnce(
@@ -791,16 +860,45 @@ func waitForSchemaUnlock(ctx context.Context, db *sql.DB, parentTable string, ch
 	sort.Strings(tables)
 
 	for _, table := range tables {
-		lockName := schemaLockName(table)
+		if err := waitForSingleSchemaUnlock(ctx, db, table); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func waitForSingleSchemaUnlock(ctx context.Context, db *sql.DB, table string) error {
+	lockName := schemaLockName(table)
+
+	maxAttempts := deadlockRetryMax + concurrentDDLRetryExtra
+	var lastErr error
+	for attempt := 0; attempt <= maxAttempts; attempt++ {
+		if attempt > 0 {
+			if err := sleepWithBackoff(ctx, attempt); err != nil {
+				return err
+			}
+		}
+
 		if err := acquireSchemaLock(ctx, db, lockName); err != nil {
+			if isSchemaLockTimeoutError(err) {
+				lastErr = err
+				continue
+			}
 			return fmt.Errorf("wait schema lock %s failed: %w", lockName, err)
 		}
 		if err := releaseSchemaLock(ctx, db, lockName); err != nil {
 			return fmt.Errorf("release schema lock %s failed: %w", lockName, err)
 		}
+
+		return nil
 	}
 
-	return nil
+	if lastErr != nil {
+		return fmt.Errorf("wait schema lock %s failed: %w", lockName, lastErr)
+	}
+
+	return fmt.Errorf("wait schema lock %s failed", lockName)
 }
 
 func createJSONTable(ctx context.Context, db *sql.DB, table string) error {

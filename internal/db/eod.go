@@ -299,6 +299,8 @@ func schemaLockName(table string) string {
 	return "schema_lock:" + table
 }
 
+var errSchemaLockTimeout = errors.New("schema lock timeout")
+
 func acquireSchemaLock(ctx context.Context, db *sql.DB, lockName string) error {
 	timeout := schemaLockTimeoutSeconds()
 	var ok int
@@ -306,9 +308,13 @@ func acquireSchemaLock(ctx context.Context, db *sql.DB, lockName string) error {
 		return err
 	}
 	if ok != 1 {
-		return fmt.Errorf("failed to acquire schema lock %s", lockName)
+		return fmt.Errorf("%w %s", errSchemaLockTimeout, lockName)
 	}
 	return nil
+}
+
+func isSchemaLockTimeoutError(err error) bool {
+	return errors.Is(err, errSchemaLockTimeout)
 }
 
 func releaseSchemaLock(ctx context.Context, db *sql.DB, lockName string) error {
