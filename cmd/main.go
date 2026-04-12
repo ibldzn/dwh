@@ -438,9 +438,14 @@ cifLoop:
 }
 
 func runFetchLoanAll(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
-	loanAccounts, err := deps.fetch.FetchLoanAccounts(ctx, "Aktif")
+	loanAccounts := make([]string, 0, 20000) // preallocate with an estimated size to reduce reallocations
+	statuses := []string{"Aktif", "Closed", "HT", "WO"}
+	for _, status := range statuses {
+		accounts, err := deps.fetch.FetchLoanAccounts(ctx, status)
 	if err != nil {
-		return fmt.Errorf("failed to fetch loan accounts: %w", err)
+			return fmt.Errorf("failed to fetch loan accounts with status %s: %w", status, err)
+		}
+		loanAccounts = append(loanAccounts, accounts...)
 	}
 
 	bar := progressbar.Default(int64(len(loanAccounts)), "fetching loans")
