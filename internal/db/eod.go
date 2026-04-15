@@ -20,6 +20,20 @@ import (
 	"github.com/ibldzn/dwh-v2/internal/str"
 )
 
+const balanceSheetTableName = "balance_sheet_reports"
+
+var balanceSheetAmountColumns = map[string]struct{}{
+	"beginning_balance":  {},
+	"debit_transaction":  {},
+	"credit_transaction": {},
+	"last_balance":       {},
+}
+
+type preparedCSVData struct {
+	columns []string
+	rows    [][]string
+}
+
 // UpsertEODCSV ingests a CSV content into an eod_* table inferred from fileName.
 // It tolerates changing headers by adding new columns on the fly.
 func (s *Store) UpsertEODCSV(ctx context.Context, fileName, eodDate, content string) (int, error) {
@@ -37,31 +51,57 @@ func (s *Store) UpsertCSV(ctx context.Context, tableName, sourceFile, asOfDate, 
 	if s == nil || s.db == nil {
 		return 0, errors.New("db store is nil")
 	}
-	if strings.TrimSpace(content) == "" {
-		return 0, nil
-	}
 	if strings.TrimSpace(tableName) == "" {
 		return 0, errors.New("table name is required")
 	}
+	if strings.TrimSpace(content) == "" {
+		return 0, nil
+	}
 
-	records, headers, err := parseCSV(content)
+	prepared, err := prepareCSVData(content)
 	if err != nil {
 		return 0, err
 	}
-	if len(headers) == 0 {
+	if len(prepared.columns) == 0 {
 		return 0, nil
 	}
 
-	columns := sanitizeHeaders(headers)
-	if len(columns) == 0 {
+	return s.upsertPreparedCSV(ctx, tableName, sourceFile, asOfDate, prepared)
+}
+
+// UpsertBalanceSheetCSV ingests balance sheet CSV content for a single branch/date snapshot.
+func (s *Store) UpsertBalanceSheetCSV(ctx context.Context, sourceFile, asOfDate, branch, content string) (int, error) {
+	if s == nil || s.db == nil {
+		return 0, errors.New("db store is nil")
+	}
+	if strings.TrimSpace(branch) == "" {
+		return 0, errors.New("branch is required")
+	}
+	if strings.TrimSpace(content) == "" {
 		return 0, nil
 	}
 
-	if err := ensureCSVTable(ctx, s.db, tableName, columns); err != nil {
+	prepared, err := prepareBalanceSheetCSVData(content, branch)
+	if err != nil {
+		return 0, err
+	}
+	if len(prepared.columns) == 0 {
+		return 0, nil
+	}
+
+	return s.upsertPreparedCSV(ctx, balanceSheetTableName, sourceFile, asOfDate, prepared)
+}
+
+func (s *Store) upsertPreparedCSV(
+	ctx context.Context,
+	tableName, sourceFile, asOfDate string,
+	prepared preparedCSVData,
+) (int, error) {
+	if err := ensureCSVTable(ctx, s.db, tableName, prepared.columns); err != nil {
 		return 0, err
 	}
 
-	insertCols := append([]string{"_row_hash", "source_file", "row_index", "as_of_date"}, columns...)
+	insertCols := append([]string{"_row_hash", "source_file", "row_index", "as_of_date"}, prepared.columns...)
 	insertCols = append(insertCols, "ingested_at")
 	placeholders := placeholders(len(insertCols))
 	updateCols := make([]string, 0, len(insertCols))
@@ -95,15 +135,8 @@ func (s *Store) UpsertCSV(ctx context.Context, tableName, sourceFile, asOfDate, 
 	defer stmt.Close()
 
 	count := 0
-	for i, record := range records {
-		row := make([]string, len(columns))
-		for idx := range columns {
-			if idx < len(record) {
-				row[idx] = strings.TrimSpace(record[idx])
-			}
-		}
-
-		rowHash := hashRow(sourceFile, row)
+	for i, row := range prepared.rows {
+		rowHash := hashCSVRow(sourceFile, asOfDate, row)
 		args := make([]any, 0, len(insertCols))
 		args = append(args, rowHash, sourceFile, i+1, asOfDate)
 		for _, value := range row {
@@ -126,6 +159,79 @@ func (s *Store) UpsertCSV(ctx context.Context, tableName, sourceFile, asOfDate, 
 	}
 
 	return count, nil
+}
+
+func prepareCSVData(content string) (preparedCSVData, error) {
+	records, headers, err := parseCSV(content)
+	if err != nil {
+		return preparedCSVData{}, err
+	}
+	if len(headers) == 0 {
+		return preparedCSVData{}, nil
+	}
+
+	columns := sanitizeHeaders(headers)
+	if len(columns) == 0 {
+		return preparedCSVData{}, nil
+	}
+
+	rows := make([][]string, 0, len(records))
+	for _, record := range records {
+		rows = append(rows, trimCSVRecord(record, len(columns)))
+	}
+
+	return preparedCSVData{
+		columns: columns,
+		rows:    rows,
+	}, nil
+}
+
+func prepareBalanceSheetCSVData(content, branch string) (preparedCSVData, error) {
+	records, headers, err := parseCSV(content)
+	if err != nil {
+		return preparedCSVData{}, err
+	}
+	if len(headers) == 0 {
+		return preparedCSVData{}, nil
+	}
+
+	sanitizedHeaders := sanitizeHeaders(headers)
+	keptIndexes := make([]int, 0, len(sanitizedHeaders))
+	columns := make([]string, 0, len(sanitizedHeaders))
+	columns = append(columns, "branch")
+	for idx := range sanitizedHeaders {
+		sanitizedHeaders[idx] = normalizeBalanceSheetColumnName(sanitizedHeaders[idx])
+	}
+
+	for idx, column := range sanitizedHeaders {
+		if column == "branch" {
+			continue
+		}
+		keptIndexes = append(keptIndexes, idx)
+		columns = append(columns, column)
+	}
+
+	rows := make([][]string, 0, len(records))
+	for _, record := range records {
+		row := make([]string, 0, len(columns))
+		row = append(row, strings.TrimSpace(branch))
+		for _, idx := range keptIndexes {
+			value := ""
+			if idx < len(record) {
+				value = strings.TrimSpace(record[idx])
+			}
+			if _, ok := balanceSheetAmountColumns[sanitizedHeaders[idx]]; ok {
+				value = normalizeBalanceSheetAmount(value)
+			}
+			row = append(row, value)
+		}
+		rows = append(rows, row)
+	}
+
+	return preparedCSVData{
+		columns: columns,
+		rows:    rows,
+	}, nil
 }
 
 func parseCSV(content string) ([][]string, []string, error) {
@@ -156,6 +262,48 @@ func parseCSV(content string) ([][]string, []string, error) {
 	}
 
 	return records[1:], headers, nil
+}
+
+func trimCSVRecord(record []string, size int) []string {
+	row := make([]string, size)
+	for idx := range size {
+		if idx < len(record) {
+			row[idx] = strings.TrimSpace(record[idx])
+		}
+	}
+	return row
+}
+
+func normalizeBalanceSheetAmount(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+
+	negative := false
+	if len(value) >= 2 && strings.HasPrefix(value, "<") && strings.HasSuffix(value, ">") {
+		negative = true
+		value = strings.TrimSpace(value[1 : len(value)-1])
+	}
+
+	value = strings.ReplaceAll(value, ",", "")
+	if value == "" {
+		return ""
+	}
+
+	if negative {
+		value = strings.TrimPrefix(value, "-")
+		return "-" + value
+	}
+
+	return value
+}
+
+func normalizeBalanceSheetColumnName(column string) string {
+	if column == "co_a_no" {
+		return "coa_no"
+	}
+	return column
 }
 
 func eodTableName(fileName string) string {
@@ -342,6 +490,10 @@ func createCSVTable(ctx context.Context, db *sql.DB, table string, columns []str
 	for _, col := range columns {
 		cols = append(cols, fmt.Sprintf("%s TEXT", col))
 	}
+	columnDefs := strings.Join(cols, ",")
+	if columnDefs != "" {
+		columnDefs += ","
+	}
 
 	stmt := fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s ("+
@@ -349,11 +501,11 @@ func createCSVTable(ctx context.Context, db *sql.DB, table string, columns []str
 			"source_file TEXT,"+
 			"row_index BIGINT,"+
 			"as_of_date DATE,"+
-			"%s,"+
+			"%s"+
 			"ingested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"+
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 		table,
-		strings.Join(cols, ","),
+		columnDefs,
 	)
 
 	_, err := db.ExecContext(ctx, stmt)
@@ -380,9 +532,11 @@ func listColumns(ctx context.Context, db *sql.DB, table string) (map[string]stru
 	return cols, rows.Err()
 }
 
-func hashRow(fileName string, values []string) string {
+func hashCSVRow(sourceFile, asOfDate string, values []string) string {
 	h := sha256.New()
-	_, _ = h.Write([]byte(fileName))
+	_, _ = h.Write([]byte(sourceFile))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(asOfDate))
 	_, _ = h.Write([]byte{0})
 	for _, v := range values {
 		_, _ = h.Write([]byte(v))

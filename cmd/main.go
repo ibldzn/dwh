@@ -22,6 +22,7 @@ import (
 const (
 	jobIngestEOD         = "INGEST_EOD"
 	jobFetchJournalTrx   = "FETCH_JOURNAL_TRX"
+	jobFetchBalanceSheet = "FETCH_BALANCE_SHEET"
 	jobFetchCOAMovements = "FETCH_COA_MOVEMENTS"
 	jobFetchMasterData   = "FETCH_MASTER_DATA"
 	jobFetchCIFAll       = "FETCH_CIF_ALL"
@@ -34,6 +35,7 @@ type runtimeConfig struct {
 	jsonIngest          bool
 	ingestEOD           bool
 	fetchJournalTrx     bool
+	fetchBalanceSheet   bool
 	fetchCOAMovements   bool
 	fetchMasterData     bool
 	fetchCIFAll         bool
@@ -73,7 +75,7 @@ func run() error {
 	}
 
 	cfg := loadRuntimeConfig()
-	window := defaultDateWindow(time.Now().UTC())
+	window := defaultDateWindow(time.Now())
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer cancel()
@@ -160,6 +162,7 @@ func loadRuntimeConfig() runtimeConfig {
 		jsonIngest:          envBool("JSON_INGEST"),
 		ingestEOD:           envBool(jobIngestEOD),
 		fetchJournalTrx:     envBool(jobFetchJournalTrx),
+		fetchBalanceSheet:   envBool(jobFetchBalanceSheet),
 		fetchCOAMovements:   envBool(jobFetchCOAMovements),
 		fetchMasterData:     envBool(jobFetchMasterData),
 		fetchCIFAll:         envBool(jobFetchCIFAll),
@@ -171,11 +174,10 @@ func loadRuntimeConfig() runtimeConfig {
 }
 
 func defaultDateWindow(now time.Time) dateWindow {
-	utc := now.UTC()
 	return dateWindow{
-		start: utc.AddDate(0, 0, -3),
-		end:   utc.AddDate(0, 0, -1),
-		asOf:  utc.Format("2006-01-02"),
+		start: now.AddDate(0, 0, -7),
+		end:   now.AddDate(0, 0, -1),
+		asOf:  now.Format("2006-01-02"),
 	}
 }
 
@@ -187,6 +189,8 @@ func runEnabledJobs(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w 
 			err = runIngestEOD(ctx, deps, cfg, w)
 		case jobFetchJournalTrx:
 			err = runFetchJournalTrx(ctx, deps, w)
+		case jobFetchBalanceSheet:
+			err = runFetchBalanceSheet(ctx, deps, cfg, w)
 		case jobFetchCOAMovements:
 			err = runFetchCOAMovements(ctx, deps, cfg, w)
 		case jobFetchMasterData:
@@ -285,6 +289,55 @@ func runFetchJournalTrx(ctx context.Context, deps runtimeDeps, w dateWindow) err
 		_ = bar.Add(1)
 	}
 
+	return nil
+}
+
+func runFetchBalanceSheet(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
+	branches := balanceSheetBranches()
+	bar := progressbar.Default(int64(len(branches)*daysInWindow(w)), "fetching and ingesting balance sheet reports")
+
+	upsertFailed := atomic.Int32{}
+	fetchFailed := atomic.Int32{}
+
+	sem := make(chan struct{}, cfg.ingestConcurrency)
+	var wg sync.WaitGroup
+
+balanceSheetLoop:
+	for d := w.start; !d.After(w.end); d = d.AddDate(0, 0, 1) {
+		currentDateStr := d.Format("2006-01-02")
+
+		for _, branch := range branches {
+			currentBranch := branch
+			currentDate := currentDateStr
+
+			select {
+			case <-ctx.Done():
+				break balanceSheetLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					report, err := deps.fetch.FetchBalanceSheetReport(ctx, currentBranch, currentDate)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch balance sheet report for branch %s on %s: %v\n", currentBranch, currentDate, err)
+						return
+					}
+
+					if _, err := deps.store.UpsertBalanceSheetCSV(ctx, "Balance Sheet Report csv", currentDate, currentBranch, report); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert balance sheet report for branch %s on %s: %v\n", currentBranch, currentDate, err)
+					}
+				})
+			}
+		}
+	}
+
+	wg.Wait()
+	fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
 	return nil
 }
 
@@ -442,7 +495,7 @@ func runFetchLoanAll(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w
 	statuses := []string{"Aktif", "Closed", "HT", "WO"}
 	for _, status := range statuses {
 		accounts, err := deps.fetch.FetchLoanAccounts(ctx, status)
-	if err != nil {
+		if err != nil {
 			return fmt.Errorf("failed to fetch loan accounts with status %s: %w", status, err)
 		}
 		loanAccounts = append(loanAccounts, accounts...)
@@ -618,13 +671,17 @@ timeDepositLoop:
 }
 
 func enabledJobNames(cfg runtimeConfig) []string {
-	jobNames := make([]string, 0, 8)
+	jobNames := make([]string, 0, 9)
 	if cfg.ingestEOD {
 		jobNames = append(jobNames, jobIngestEOD)
 	}
 
 	if cfg.fetchJournalTrx {
 		jobNames = append(jobNames, jobFetchJournalTrx)
+	}
+
+	if cfg.fetchBalanceSheet {
+		jobNames = append(jobNames, jobFetchBalanceSheet)
 	}
 
 	if cfg.fetchCOAMovements {
@@ -652,6 +709,14 @@ func enabledJobNames(cfg runtimeConfig) []string {
 	}
 
 	return jobNames
+}
+
+func balanceSheetBranches() []string {
+	branches := make([]string, 0, 9)
+	for branch := 0; branch <= 8; branch++ {
+		branches = append(branches, fmt.Sprintf("%03d", branch))
+	}
+	return branches
 }
 
 func daysInWindow(w dateWindow) int {
