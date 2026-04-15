@@ -9,9 +9,16 @@ import (
 func TestDefaultDateWindow(t *testing.T) {
 	now := time.Date(2026, 2, 26, 14, 30, 15, 0, time.FixedZone("UTC+7", 7*60*60))
 
-	w := defaultDateWindow(now)
-	wantStart := now.UTC().AddDate(0, 0, -3)
-	wantEnd := now.UTC().AddDate(0, 0, -1)
+	t.Setenv(envIngestStartDate, "")
+	t.Setenv(envIngestEndDate, "")
+
+	w, err := loadDateWindow(now)
+	if err != nil {
+		t.Fatalf("loadDateWindow failed: %v", err)
+	}
+
+	wantStart := now.AddDate(0, 0, -7)
+	wantEnd := now.AddDate(0, 0, -1)
 
 	if !w.start.Equal(wantStart) {
 		t.Fatalf("unexpected start: got %v, want %v", w.start, wantStart)
@@ -20,13 +27,104 @@ func TestDefaultDateWindow(t *testing.T) {
 		t.Fatalf("unexpected end: got %v, want %v", w.end, wantEnd)
 	}
 
-	wantAsOf := now.UTC().Format("2006-01-02")
+	wantAsOf := now.Format("2006-01-02")
 	if w.asOf != wantAsOf {
 		t.Fatalf("unexpected asOf: got %q, want %q", w.asOf, wantAsOf)
 	}
 
-	if got := daysInWindow(w); got != 3 {
-		t.Fatalf("unexpected window days: got %d, want 3", got)
+	if got := daysInWindow(w); got != 7 {
+		t.Fatalf("unexpected window days: got %d, want 7", got)
+	}
+}
+
+func TestLoadDateWindow(t *testing.T) {
+	loc := time.FixedZone("UTC+7", 7*60*60)
+	now := time.Date(2026, 2, 26, 14, 30, 15, 0, loc)
+
+	testCases := []struct {
+		name       string
+		startDate  string
+		endDate    string
+		wantWindow *dateWindow
+		wantErr    string
+	}{
+		{
+			name: "no overrides uses default server local window",
+			wantWindow: &dateWindow{
+				start: now.AddDate(0, 0, -7),
+				end:   now.AddDate(0, 0, -1),
+				asOf:  now.Format("2006-01-02"),
+			},
+		},
+		{
+			name:      "valid overrides use explicit range",
+			startDate: "2026-02-01",
+			endDate:   "2026-02-05",
+			wantWindow: &dateWindow{
+				start: time.Date(2026, 2, 1, 0, 0, 0, 0, loc),
+				end:   time.Date(2026, 2, 5, 0, 0, 0, 0, loc),
+				asOf:  now.Format("2006-01-02"),
+			},
+		},
+		{
+			name:      "only start date set returns error",
+			startDate: "2026-02-01",
+			wantErr:   "INGEST_START_DATE and INGEST_END_DATE must both be set together",
+		},
+		{
+			name:    "only end date set returns error",
+			endDate: "2026-02-05",
+			wantErr: "INGEST_START_DATE and INGEST_END_DATE must both be set together",
+		},
+		{
+			name:      "invalid start date format returns error",
+			startDate: "2026/02/01",
+			endDate:   "2026-02-05",
+			wantErr:   `invalid INGEST_START_DATE "2026/02/01": expected YYYY-MM-DD`,
+		},
+		{
+			name:      "invalid end date format returns error",
+			startDate: "2026-02-01",
+			endDate:   "2026/02/05",
+			wantErr:   `invalid INGEST_END_DATE "2026/02/05": expected YYYY-MM-DD`,
+		},
+		{
+			name:      "end before start returns error",
+			startDate: "2026-02-05",
+			endDate:   "2026-02-01",
+			wantErr:   "INGEST_END_DATE must be on or after INGEST_START_DATE",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(envIngestStartDate, tc.startDate)
+			t.Setenv(envIngestEndDate, tc.endDate)
+
+			got, err := loadDateWindow(now)
+			if tc.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expected error %q, got nil", tc.wantErr)
+				}
+				if err.Error() != tc.wantErr {
+					t.Fatalf("unexpected error: got %q, want %q", err.Error(), tc.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("loadDateWindow failed: %v", err)
+			}
+			if !got.start.Equal(tc.wantWindow.start) {
+				t.Fatalf("unexpected start: got %v, want %v", got.start, tc.wantWindow.start)
+			}
+			if !got.end.Equal(tc.wantWindow.end) {
+				t.Fatalf("unexpected end: got %v, want %v", got.end, tc.wantWindow.end)
+			}
+			if got.asOf != tc.wantWindow.asOf {
+				t.Fatalf("unexpected asOf: got %q, want %q", got.asOf, tc.wantWindow.asOf)
+			}
+		})
 	}
 }
 

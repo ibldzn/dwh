@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -31,6 +33,9 @@ const (
 	jobFetchLoanAll      = "FETCH_LOAN_ALL"
 	jobFetchSavingsAll   = "FETCH_SAVINGS_ALL"
 	jobFetchTimeDeposit  = "FETCH_TIME_DEPOSIT_ALL"
+
+	envIngestStartDate = "INGEST_START_DATE"
+	envIngestEndDate   = "INGEST_END_DATE"
 )
 
 type runtimeConfig struct {
@@ -79,7 +84,10 @@ func run() error {
 	}
 
 	cfg := loadRuntimeConfig()
-	window := defaultDateWindow(time.Now())
+	window, err := loadDateWindow(time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to load date window: %w", err)
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer cancel()
@@ -179,12 +187,47 @@ func loadRuntimeConfig() runtimeConfig {
 	}
 }
 
-func defaultDateWindow(now time.Time) dateWindow {
-	return dateWindow{
-		start: now.AddDate(0, 0, -7),
-		end:   now.AddDate(0, 0, -1),
-		asOf:  now.Format("2006-01-02"),
+func loadDateWindow(now time.Time) (dateWindow, error) {
+	startDate := strings.TrimSpace(os.Getenv(envIngestStartDate))
+	endDate := strings.TrimSpace(os.Getenv(envIngestEndDate))
+
+	if startDate == "" && endDate == "" {
+		return dateWindow{
+			start: now.AddDate(0, 0, -7),
+			end:   now.AddDate(0, 0, -1),
+			asOf:  now.Format("2006-01-02"),
+		}, nil
 	}
+
+	if startDate == "" || endDate == "" {
+		return dateWindow{}, fmt.Errorf("%s and %s must both be set together", envIngestStartDate, envIngestEndDate)
+	}
+
+	start, err := parseDateWindowOverride(envIngestStartDate, startDate, now.Location())
+	if err != nil {
+		return dateWindow{}, err
+	}
+	end, err := parseDateWindowOverride(envIngestEndDate, endDate, now.Location())
+	if err != nil {
+		return dateWindow{}, err
+	}
+	if end.Before(start) {
+		return dateWindow{}, errors.New("INGEST_END_DATE must be on or after INGEST_START_DATE")
+	}
+
+	return dateWindow{
+		start: start,
+		end:   end,
+		asOf:  now.Format("2006-01-02"),
+	}, nil
+}
+
+func parseDateWindowOverride(envKey, value string, loc *time.Location) (time.Time, error) {
+	parsed, err := time.ParseInLocation("2006-01-02", value, loc)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid %s %q: expected YYYY-MM-DD", envKey, value)
+	}
+	return parsed, nil
 }
 
 func runEnabledJobs(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
