@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"reflect"
 	"testing"
 )
@@ -65,6 +66,39 @@ func TestNormalizeBalanceSheetAmount(t *testing.T) {
 	}
 }
 
+func TestPrepareBranchScopedCSVDataInjectsBranchColumn(t *testing.T) {
+	content := stringsJoinLines(
+		`Branch|"Transaction ID"|"Amount"`,
+		`"001"|"TX-01"|"1500"`,
+	)
+
+	got, err := prepareBranchScopedCSVData(content, "003")
+	if err != nil {
+		t.Fatalf("prepareBranchScopedCSVData failed: %v", err)
+	}
+
+	wantColumns := []string{"_branch", "branch", "transaction_i_d", "amount"}
+	if !reflect.DeepEqual(got.columns, wantColumns) {
+		t.Fatalf("unexpected columns: got %v, want %v", got.columns, wantColumns)
+	}
+
+	wantRows := [][]string{{"003", "001", "TX-01", "1500"}}
+	if !reflect.DeepEqual(got.rows, wantRows) {
+		t.Fatalf("unexpected rows: got %v, want %v", got.rows, wantRows)
+	}
+}
+
+func TestPrepareBranchScopedCSVDataRejectsBlankBranch(t *testing.T) {
+	content := stringsJoinLines(
+		`"Transaction ID"|"Amount"`,
+		`"TX-01"|"1500"`,
+	)
+
+	if _, err := prepareBranchScopedCSVData(content, "   "); err == nil {
+		t.Fatal("expected blank branch to be rejected")
+	}
+}
+
 func TestHashCSVRowIncludesAsOfDate(t *testing.T) {
 	row := []string{"1001", "Cash on Hand", "123456.78"}
 
@@ -89,6 +123,40 @@ func TestHashCSVRowIncludesBranchValue(t *testing.T) {
 
 	if hashA == hashB {
 		t.Fatalf("hash should differ across branch values: got %q and %q", hashA, hashB)
+	}
+}
+
+func TestPrepareBranchScopedCSVDataMakesHashBranchAware(t *testing.T) {
+	content := stringsJoinLines(
+		`"Transaction ID"|"Amount"`,
+		`"TX-01"|"1500"`,
+	)
+
+	preparedA, err := prepareBranchScopedCSVData(content, "000")
+	if err != nil {
+		t.Fatalf("prepareBranchScopedCSVData failed: %v", err)
+	}
+	preparedB, err := prepareBranchScopedCSVData(content, "001")
+	if err != nil {
+		t.Fatalf("prepareBranchScopedCSVData failed: %v", err)
+	}
+
+	hashA := hashCSVRow("Vault Mutation Report csv", "2026-03-11", preparedA.rows[0])
+	hashB := hashCSVRow("Vault Mutation Report csv", "2026-03-11", preparedB.rows[0])
+	if hashA == hashB {
+		t.Fatalf("hash should differ across injected _branch values: got %q and %q", hashA, hashB)
+	}
+}
+
+func TestUpsertBranchScopedCSVRejectsBlankBranch(t *testing.T) {
+	store := &Store{}
+	content := stringsJoinLines(
+		`"Transaction ID"|"Amount"`,
+		`"TX-01"|"1500"`,
+	)
+
+	if _, err := store.UpsertBranchScopedCSV(context.Background(), "vault_mutations", "Vault Mutation Report csv", "2026-03-11", "", content); err == nil {
+		t.Fatal("expected blank branch to be rejected")
 	}
 }
 

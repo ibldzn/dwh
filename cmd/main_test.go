@@ -37,6 +37,8 @@ func TestLoadRuntimeConfig(t *testing.T) {
 		t.Setenv("INGEST_EOD", "1")
 		t.Setenv("FETCH_JOURNAL_TRX", "TRUE")
 		t.Setenv("FETCH_BALANCE_SHEET", "true")
+		t.Setenv("FETCH_VAULT_MUTATIONS", "1")
+		t.Setenv("FETCH_TELLER_MUTATIONS", "TRUE")
 		t.Setenv("FETCH_COA_MOVEMENTS", "t")
 		t.Setenv("FETCH_MASTER_DATA", "invalid-bool")
 		t.Setenv("FETCH_CIF_ALL", "true")
@@ -50,8 +52,8 @@ func TestLoadRuntimeConfig(t *testing.T) {
 		if !got.jsonIngest {
 			t.Fatalf("jsonIngest should be true")
 		}
-		if !got.ingestEOD || !got.fetchJournalTrx || !got.fetchBalanceSheet || !got.fetchCOAMovements {
-			t.Fatalf("expected ingestEOD, fetchJournalTrx, fetchBalanceSheet, fetchCOAMovements to be true: %+v", got)
+		if !got.ingestEOD || !got.fetchJournalTrx || !got.fetchBalanceSheet || !got.fetchVaultMut || !got.fetchTellerMut || !got.fetchCOAMovements {
+			t.Fatalf("expected ingestEOD, fetchJournalTrx, fetchBalanceSheet, fetchVaultMut, fetchTellerMut, fetchCOAMovements to be true: %+v", got)
 		}
 		if got.fetchMasterData {
 			t.Fatalf("fetchMasterData should be false for invalid bool value")
@@ -80,6 +82,8 @@ func TestEnabledJobNamesOrder(t *testing.T) {
 		ingestEOD:           true,
 		fetchJournalTrx:     true,
 		fetchBalanceSheet:   true,
+		fetchVaultMut:       true,
+		fetchTellerMut:      true,
 		fetchCIFAll:         true,
 		fetchLoanAll:        true,
 		fetchTimeDepositAll: true,
@@ -90,6 +94,8 @@ func TestEnabledJobNamesOrder(t *testing.T) {
 		jobIngestEOD,
 		jobFetchJournalTrx,
 		jobFetchBalanceSheet,
+		jobFetchVaultMut,
+		jobFetchTellerMut,
 		jobFetchCIFAll,
 		jobFetchLoanAll,
 		jobFetchTimeDeposit,
@@ -108,6 +114,8 @@ func setBaseRuntimeEnv(t *testing.T) {
 		jobIngestEOD,
 		jobFetchJournalTrx,
 		jobFetchBalanceSheet,
+		jobFetchVaultMut,
+		jobFetchTellerMut,
 		jobFetchCOAMovements,
 		jobFetchMasterData,
 		jobFetchCIFAll,

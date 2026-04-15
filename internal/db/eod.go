@@ -69,6 +69,33 @@ func (s *Store) UpsertCSV(ctx context.Context, tableName, sourceFile, asOfDate, 
 	return s.upsertPreparedCSV(ctx, tableName, sourceFile, asOfDate, prepared)
 }
 
+// UpsertBranchScopedCSV ingests a CSV content into the provided table name and
+// injects an authoritative branch scope column named _branch into each row.
+func (s *Store) UpsertBranchScopedCSV(ctx context.Context, tableName, sourceFile, asOfDate, branch, content string) (int, error) {
+	if s == nil || s.db == nil {
+		return 0, errors.New("db store is nil")
+	}
+	if strings.TrimSpace(tableName) == "" {
+		return 0, errors.New("table name is required")
+	}
+	if strings.TrimSpace(branch) == "" {
+		return 0, errors.New("branch is required")
+	}
+	if strings.TrimSpace(content) == "" {
+		return 0, nil
+	}
+
+	prepared, err := prepareBranchScopedCSVData(content, branch)
+	if err != nil {
+		return 0, err
+	}
+	if len(prepared.columns) == 0 {
+		return 0, nil
+	}
+
+	return s.upsertPreparedCSV(ctx, tableName, sourceFile, asOfDate, prepared)
+}
+
 // UpsertBalanceSheetCSV ingests balance sheet CSV content for a single branch/date snapshot.
 func (s *Store) UpsertBalanceSheetCSV(ctx context.Context, sourceFile, asOfDate, branch, content string) (int, error) {
 	if s == nil || s.db == nil {
@@ -234,6 +261,38 @@ func prepareBalanceSheetCSVData(content, branch string) (preparedCSVData, error)
 	}, nil
 }
 
+func prepareBranchScopedCSVData(content, branch string) (preparedCSVData, error) {
+	branch = strings.TrimSpace(branch)
+	if branch == "" {
+		return preparedCSVData{}, errors.New("branch is required")
+	}
+
+	prepared, err := prepareCSVData(content)
+	if err != nil {
+		return preparedCSVData{}, err
+	}
+	if len(prepared.columns) == 0 {
+		return preparedCSVData{}, nil
+	}
+
+	columns := make([]string, 0, len(prepared.columns)+1)
+	columns = append(columns, "_branch")
+	columns = append(columns, dedupeCSVColumns(prepared.columns, map[string]int{"_branch": 1})...)
+
+	rows := make([][]string, 0, len(prepared.rows))
+	for _, record := range prepared.rows {
+		row := make([]string, 0, len(record)+1)
+		row = append(row, branch)
+		row = append(row, record...)
+		rows = append(rows, row)
+	}
+
+	return preparedCSVData{
+		columns: columns,
+		rows:    rows,
+	}, nil
+}
+
 func parseCSV(content string) ([][]string, []string, error) {
 	r := strings.NewReader(content)
 	buffered := bufio.NewReader(r)
@@ -335,7 +394,10 @@ func csvTableName(prefix, fileName string) string {
 }
 
 func sanitizeHeaders(headers []string) []string {
-	seen := map[string]int{}
+	return dedupeCSVColumns(headersToColumns(headers), nil)
+}
+
+func headersToColumns(headers []string) []string {
 	cols := make([]string, 0, len(headers))
 	for i, header := range headers {
 		col := snakeCase(header)
@@ -345,13 +407,28 @@ func sanitizeHeaders(headers []string) []string {
 		if col[0] >= '0' && col[0] <= '9' {
 			col = "col_" + col
 		}
-		if count := seen[col]; count > 0 {
-			col = fmt.Sprintf("%s_%d", col, count+1)
-		}
-		seen[col]++
 		cols = append(cols, col)
 	}
 	return cols
+}
+
+func dedupeCSVColumns(columns []string, reserved map[string]int) []string {
+	seen := make(map[string]int, len(columns)+len(reserved))
+	for key, count := range reserved {
+		seen[key] = count
+	}
+
+	deduped := make([]string, 0, len(columns))
+	for _, column := range columns {
+		col := column
+		if count := seen[col]; count > 0 {
+			col = fmt.Sprintf("%s_%d", col, count+1)
+		}
+		seen[column]++
+		seen[col] = seen[column]
+		deduped = append(deduped, col)
+	}
+	return deduped
 }
 
 func snakeCase(input string) string {

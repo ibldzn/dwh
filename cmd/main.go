@@ -23,6 +23,8 @@ const (
 	jobIngestEOD         = "INGEST_EOD"
 	jobFetchJournalTrx   = "FETCH_JOURNAL_TRX"
 	jobFetchBalanceSheet = "FETCH_BALANCE_SHEET"
+	jobFetchVaultMut     = "FETCH_VAULT_MUTATIONS"
+	jobFetchTellerMut    = "FETCH_TELLER_MUTATIONS"
 	jobFetchCOAMovements = "FETCH_COA_MOVEMENTS"
 	jobFetchMasterData   = "FETCH_MASTER_DATA"
 	jobFetchCIFAll       = "FETCH_CIF_ALL"
@@ -36,6 +38,8 @@ type runtimeConfig struct {
 	ingestEOD           bool
 	fetchJournalTrx     bool
 	fetchBalanceSheet   bool
+	fetchVaultMut       bool
+	fetchTellerMut      bool
 	fetchCOAMovements   bool
 	fetchMasterData     bool
 	fetchCIFAll         bool
@@ -163,6 +167,8 @@ func loadRuntimeConfig() runtimeConfig {
 		ingestEOD:           envBool(jobIngestEOD),
 		fetchJournalTrx:     envBool(jobFetchJournalTrx),
 		fetchBalanceSheet:   envBool(jobFetchBalanceSheet),
+		fetchVaultMut:       envBool(jobFetchVaultMut),
+		fetchTellerMut:      envBool(jobFetchTellerMut),
 		fetchCOAMovements:   envBool(jobFetchCOAMovements),
 		fetchMasterData:     envBool(jobFetchMasterData),
 		fetchCIFAll:         envBool(jobFetchCIFAll),
@@ -191,6 +197,10 @@ func runEnabledJobs(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w 
 			err = runFetchJournalTrx(ctx, deps, w)
 		case jobFetchBalanceSheet:
 			err = runFetchBalanceSheet(ctx, deps, cfg, w)
+		case jobFetchVaultMut:
+			err = runFetchVaultMutations(ctx, deps, cfg, w)
+		case jobFetchTellerMut:
+			err = runFetchTellerMutations(ctx, deps, cfg, w)
 		case jobFetchCOAMovements:
 			err = runFetchCOAMovements(ctx, deps, cfg, w)
 		case jobFetchMasterData:
@@ -293,7 +303,7 @@ func runFetchJournalTrx(ctx context.Context, deps runtimeDeps, w dateWindow) err
 }
 
 func runFetchBalanceSheet(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
-	branches := balanceSheetBranches()
+	branches := reportBranches()
 	bar := progressbar.Default(int64(len(branches)*daysInWindow(w)), "fetching and ingesting balance sheet reports")
 
 	upsertFailed := atomic.Int32{}
@@ -330,6 +340,92 @@ balanceSheetLoop:
 					if _, err := deps.store.UpsertBalanceSheetCSV(ctx, "Balance Sheet Report csv", currentDate, currentBranch, report); err != nil {
 						upsertFailed.Add(1)
 						fmt.Fprintf(os.Stderr, "failed to upsert balance sheet report for branch %s on %s: %v\n", currentBranch, currentDate, err)
+					}
+				})
+			}
+		}
+	}
+
+	wg.Wait()
+	fmt.Printf("done (fetch failed: %d, upsert failed: %d)\n", fetchFailed.Load(), upsertFailed.Load())
+	return nil
+}
+
+func runFetchVaultMutations(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
+	return runFetchBranchScopedReport(
+		ctx,
+		deps,
+		cfg,
+		w,
+		"fetching and ingesting vault mutation reports",
+		"Vault Mutation Report csv",
+		"vault_mutations",
+		func(ctx context.Context, branch, date string) (string, error) {
+			return deps.fetch.FetchVaultMutationReport(ctx, branch, date, date)
+		},
+	)
+}
+
+func runFetchTellerMutations(ctx context.Context, deps runtimeDeps, cfg runtimeConfig, w dateWindow) error {
+	return runFetchBranchScopedReport(
+		ctx,
+		deps,
+		cfg,
+		w,
+		"fetching and ingesting teller mutation reports",
+		"Teller Mutation Report (Teller's Blotter) csv",
+		"teller_mutations",
+		func(ctx context.Context, branch, date string) (string, error) {
+			return deps.fetch.FetchTellerMutationReport(ctx, branch, date, date)
+		},
+	)
+}
+
+func runFetchBranchScopedReport(
+	ctx context.Context,
+	deps runtimeDeps,
+	cfg runtimeConfig,
+	w dateWindow,
+	progressLabel, sourceFile, tableName string,
+	fetchReport func(context.Context, string, string) (string, error),
+) error {
+	branches := reportBranches()
+	bar := progressbar.Default(int64(len(branches)*daysInWindow(w)), progressLabel)
+
+	upsertFailed := atomic.Int32{}
+	fetchFailed := atomic.Int32{}
+
+	sem := make(chan struct{}, cfg.ingestConcurrency)
+	var wg sync.WaitGroup
+
+branchReportLoop:
+	for d := w.start; !d.After(w.end); d = d.AddDate(0, 0, 1) {
+		currentDateStr := d.Format("2006-01-02")
+
+		for _, branch := range branches {
+			currentBranch := branch
+			currentDate := currentDateStr
+
+			select {
+			case <-ctx.Done():
+				break branchReportLoop
+			case sem <- struct{}{}:
+				wg.Go(func() {
+					defer func() {
+						<-sem
+						_ = bar.Add(1)
+					}()
+
+					report, err := fetchReport(ctx, currentBranch, currentDate)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch %s for branch %s on %s: %v\n", sourceFile, currentBranch, currentDate, err)
+						return
+					}
+
+					if _, err := deps.store.UpsertBranchScopedCSV(ctx, tableName, sourceFile, currentDate, currentBranch, report); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert %s for branch %s on %s: %v\n", sourceFile, currentBranch, currentDate, err)
 					}
 				})
 			}
@@ -671,7 +767,7 @@ timeDepositLoop:
 }
 
 func enabledJobNames(cfg runtimeConfig) []string {
-	jobNames := make([]string, 0, 9)
+	jobNames := make([]string, 0, 11)
 	if cfg.ingestEOD {
 		jobNames = append(jobNames, jobIngestEOD)
 	}
@@ -682,6 +778,14 @@ func enabledJobNames(cfg runtimeConfig) []string {
 
 	if cfg.fetchBalanceSheet {
 		jobNames = append(jobNames, jobFetchBalanceSheet)
+	}
+
+	if cfg.fetchVaultMut {
+		jobNames = append(jobNames, jobFetchVaultMut)
+	}
+
+	if cfg.fetchTellerMut {
+		jobNames = append(jobNames, jobFetchTellerMut)
 	}
 
 	if cfg.fetchCOAMovements {
@@ -711,7 +815,7 @@ func enabledJobNames(cfg runtimeConfig) []string {
 	return jobNames
 }
 
-func balanceSheetBranches() []string {
+func reportBranches() []string {
 	branches := make([]string, 0, 9)
 	for branch := 0; branch <= 8; branch++ {
 		branches = append(branches, fmt.Sprintf("%03d", branch))
