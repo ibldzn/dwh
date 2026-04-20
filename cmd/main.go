@@ -734,6 +734,19 @@ savingLoop:
 					if _, err := deps.store.UpsertJSON(ctx, "raw_savings", "/tabungan/inquiry/rekening/tabungan", w.asOf, payload, []string{"norekening", "no_rekening", "id"}); err != nil {
 						upsertFailed.Add(1)
 						fmt.Fprintf(os.Stderr, "failed to upsert saving %s: %v\n", currentSavingID, err)
+						return
+					}
+
+					statementPayload, err := deps.fetch.FetchSavingStatementsRaw(ctx, currentSavingID)
+					if err != nil {
+						fetchFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to fetch saving statements %s: %v\n", currentSavingID, err)
+						return
+					}
+
+					if _, err := deps.store.UpsertJSON(ctx, "raw_savings_statements", "/tabungan/inquiry/rekening/historyMutasi", w.asOf, statementPayload, []string{"norekening", "no_rekening", "id"}); err != nil {
+						upsertFailed.Add(1)
+						fmt.Fprintf(os.Stderr, "failed to upsert saving statements %s: %v\n", currentSavingID, err)
 					}
 					return
 				}

@@ -73,6 +73,18 @@ func (f *Fetcher) FetchSavingDetailRaw(ctx context.Context, accountNo string) (a
 	return f.FetchJSONResult(ctx, http.MethodGet, "/tabungan/inquiry/rekening/tabungan", q)
 }
 
+func (f *Fetcher) FetchSavingStatementsRaw(ctx context.Context, accountNo string) (any, error) {
+	q := url.Values{}
+	q.Set("id", accountNo)
+
+	payload, err := f.FetchJSONResult(ctx, http.MethodGet, "/tabungan/inquiry/rekening/historyMutasi", q)
+	if err != nil {
+		return nil, err
+	}
+
+	return wrapSavingStatementsPayload(accountNo, payload), nil
+}
+
 func (f *Fetcher) FetchTimeDepositDetailRaw(ctx context.Context, account string) (any, error) {
 	q := url.Values{}
 	q.Set("id", account)
@@ -89,4 +101,21 @@ func (f *Fetcher) FetchTimeDepositMasterDataRaw(ctx context.Context) (any, error
 
 func (f *Fetcher) FetchLoanMasterDataRaw(ctx context.Context) (any, error) {
 	return f.FetchJSONResult(ctx, http.MethodGet, "/pinjaman/inquiry/rekening//listvalues", nil)
+}
+
+func wrapSavingStatementsPayload(accountNo string, payload any) any {
+	switch data := payload.(type) {
+	case map[string]any:
+		wrapped := make(map[string]any, len(data)+1)
+		wrapped["norekening"] = accountNo
+		for key, value := range data {
+			wrapped[key] = value
+		}
+		return wrapped
+	default:
+		return map[string]any{
+			"norekening": accountNo,
+			"value":      payload,
+		}
+	}
 }

@@ -118,6 +118,47 @@ func TestExtractRowKeyPriority(t *testing.T) {
 	}
 }
 
+func TestSavingsStatementJSONShapeUsesNoRekeningAsParentKey(t *testing.T) {
+	payload := map[string]any{
+		"norekening": "REK-1",
+		"saldoawal":  "1000",
+		"mutasi": []any{
+			map[string]any{
+				"keterangan": "setor",
+				"debit":      "500",
+			},
+		},
+	}
+
+	flat, arrays := flattenJSON(payload)
+
+	if got := extractRowKey(flat, []string{"norekening", "no_rekening", "id"}); got != "REK-1" {
+		t.Fatalf("row key mismatch: got=%s", got)
+	}
+	if got := flat["saldoawal"]; got != "1000" {
+		t.Fatalf("saldoawal mismatch: got=%v", got)
+	}
+
+	children := buildChildData("raw_savings_statements", arrays)
+	if len(children) != 1 {
+		t.Fatalf("children length mismatch: got=%d", len(children))
+	}
+
+	child := children[0]
+	if child.table != "raw_savings_statements__mutasi" {
+		t.Fatalf("child table mismatch: got=%s", child.table)
+	}
+	if len(child.rows) != 1 {
+		t.Fatalf("child rows mismatch: got=%d", len(child.rows))
+	}
+	if got := child.rows[0].values["keterangan"]; got != "setor" {
+		t.Fatalf("child keterangan mismatch: got=%v", got)
+	}
+	if got := child.rows[0].values["debit"]; got != "500" {
+		t.Fatalf("child debit mismatch: got=%v", got)
+	}
+}
+
 func TestBuildOverflowJSONWithSchemaFullStyleInputs(t *testing.T) {
 	columns := []string{"a", "b"}
 	values := map[string]any{
