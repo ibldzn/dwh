@@ -46,6 +46,46 @@ func (f *Fetcher) FetchSavingsDetail(ctx context.Context, accountNo string) (mod
 	return data.Data.Saving, nil
 }
 
+func (f *Fetcher) FetchSavingsStatements(ctx context.Context, accountNo string) ([]models.SavingStatement, error) {
+	req, err := f.client.NewRequestWithSessionID(ctx, "GET", "/tabungan/inquiry/rekening/historyMutasi", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", accountNo)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("fetch savings statements failed: %s", resp.Status)
+	}
+
+	var data struct {
+		Data struct {
+			Result struct {
+				Statements []models.SavingStatement `json:"mutasi"`
+			} `json:"result"`
+		} `json:"data"`
+		Status string `json:"status"`
+	}
+
+	if err := fincloud.DecodeJSON(resp, &data); err != nil {
+		return nil, err
+	}
+
+	if data.Status != "ok" {
+		return nil, fmt.Errorf("fetch savings statements failed: status %s", data.Status)
+	}
+
+	return data.Data.Result.Statements, nil
+}
+
 func (f *Fetcher) FetchSavingsAccounts(ctx context.Context) ([]string, error) {
 	// /tabungan/inquiry/rekening/cari?cabang=ALL&datamutasi=false&pagenumber=0&pagesize=9999999999999999999&rowcount=0
 	req, err := f.client.NewRequestWithSessionID(ctx, "GET", "/tabungan/inquiry/rekening/cari", nil)

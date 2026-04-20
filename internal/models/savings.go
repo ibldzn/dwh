@@ -126,3 +126,21 @@ type DataStandingOrder struct {
 	Keterangan    string `json:"keterangan"`
 	Fee           string `json:"fee"`
 }
+
+type SavingStatement struct {
+	Tgltransaksi         string  `json:"tgltransaksi"`
+	Jam                  string  `json:"jam"`
+	Saldoawal            string  `json:"saldoawal"`
+	Debit                *string `json:"debit"`
+	Kredit               *string `json:"kredit"`
+	Saldoakhir           string  `json:"saldoakhir"`
+	SaldoakhirEquivalent string  `json:"saldoakhir_equivalent"`
+	Jenistransaksi       string  `json:"jenistransaksi"`
+	Keterangan           string  `json:"keterangan"`
+	Referensi            string  `json:"referensi"`
+	Lokasi               string  `json:"lokasi"`
+	Nojurnal             string  `json:"nojurnal"`
+	RecDibuatOleh        string  `json:"rec_dibuat_oleh"`
+	TrxRate              int64   `json:"trx_rate"`
+	MidRateDc            string  `json:"mid_rate_dc"`
+}
